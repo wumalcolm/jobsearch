@@ -203,7 +203,16 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .profile-kicker{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#6b7280;margin-bottom:10px}
 .profile-preview-name{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em}
 .profile-preview-title{margin-top:6px;font-size:14px;color:#35506b;line-height:1.5}
-.profile-preview-meta{display:flex;flex-direction:column;gap:8px;margin-top:14px;font-size:13px;color:#4b5563}
+.profile-preview-location{margin-top:14px;font-size:13px;color:#4b5563;line-height:1.6}
+.profile-preview-meta{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.preview-contact-card{padding:12px 14px;border-radius:18px;background:#f8fafc;border:1px solid #e3e8f1;display:flex;flex-direction:column;gap:10px}
+.preview-contact-row{display:flex;align-items:flex-start;gap:10px;font-size:13px;color:#374151;line-height:1.5}
+.preview-contact-row a{color:#174ea6;text-decoration:none;word-break:break-word}
+.preview-contact-row a:hover{text-decoration:underline}
+.preview-icon{width:28px;height:28px;border-radius:10px;background:#eef3fd;border:1px solid #d8e4fb;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#174ea6}
+.preview-icon svg{width:15px;height:15px;display:block}
+.preview-label{font-size:10px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#6b7280;margin-bottom:2px}
+.preview-value{font-size:13px;color:#1f2937;word-break:break-word}
 .profile-preview-summary{margin-top:14px;padding:14px;border-radius:18px;background:linear-gradient(180deg,#f8fbff 0,#f2f7ff 100%);border:1px solid #dbe7fb;font-size:13px;color:#35506b;line-height:1.7}
 .profile-form-wrap{display:flex;flex-direction:column;gap:16px}
 .profile-section{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:var(--shadow)}
@@ -428,10 +437,48 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
             <div class="profile-kicker">Profile preview</div>
             <div class="profile-preview-name" id="profile-preview-name">Malcolm Wu</div>
             <div class="profile-preview-title" id="profile-preview-title">Strategic Manager | Startup Ecosystem Builder | Innovation Program Designer</div>
+            <div class="profile-preview-location" id="profile-preview-loc">Banja Luka, Bosnia & Herzegovina</div>
             <div class="profile-preview-meta">
-              <div id="profile-preview-loc">Banja Luka, Bosnia & Herzegovina</div>
-              <div id="profile-preview-email">wu.malcolm@gmail.com</div>
-              <div id="profile-preview-links">linkedin.com/in/wumalcolm · malcolmwu.com</div>
+              <div class="preview-contact-card">
+                <div class="preview-contact-row">
+                  <div class="preview-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16v12H4z"/><path d="m4 7 8 6 8-6"/></svg>
+                  </div>
+                  <div>
+                    <div class="preview-label">Email</div>
+                    <div class="preview-value" id="profile-preview-email">wu.malcolm@gmail.com</div>
+                  </div>
+                </div>
+                <div class="preview-contact-row">
+                  <div class="preview-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M6.94 8.5A1.56 1.56 0 1 1 6.94 5.38a1.56 1.56 0 0 1 0 3.12ZM8.5 10.06H5.38V18.6H8.5v-8.53ZM18.62 13.38c0-2.56-1.36-3.75-3.19-3.75-1.47 0-2.13.81-2.5 1.38v-1.19H9.81c.04.79 0 8.53 0 8.53h3.12v-4.76c0-.25.02-.5.1-.68.2-.5.66-1.02 1.43-1.02 1.01 0 1.41.77 1.41 1.89v4.57H19v-4.98Z"/></svg>
+                  </div>
+                  <div>
+                    <div class="preview-label">LinkedIn</div>
+                    <div class="preview-value" id="profile-preview-linkedin">linkedin.com/in/wumalcolm</div>
+                  </div>
+                </div>
+                <div class="preview-contact-row">
+                  <div class="preview-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14.5 14.5 0 0 1 0 18"/><path d="M12 3a14.5 14.5 0 0 0 0 18"/></svg>
+                  </div>
+                  <div>
+                    <div class="preview-label">Website</div>
+                    <div class="preview-value" id="profile-preview-web">malcolmwu.com</div>
+                  </div>
+                </div>
+              </div>
+              <div class="preview-contact-card">
+                <div class="preview-contact-row">
+                  <div class="preview-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6-4.35-6-10a6 6 0 0 1 12 0c0 5.65-6 10-6 10Z"/><circle cx="12" cy="11" r="2.5"/></svg>
+                  </div>
+                  <div>
+                    <div class="preview-label">Based In</div>
+                    <div class="preview-value" id="profile-preview-loc-detail">Banja Luka, Bosnia & Herzegovina</div>
+                  </div>
+                </div>
+              </div>
             </div>
             <div class="profile-preview-summary" id="profile-preview-summary">Edit your CV once, then use this profile to generate platform-ready content, AI outreach drafts, and skill match reports.</div>
           </div>
@@ -601,6 +648,14 @@ function buildOrgBrief(org){
     `Website: ${org.website||'Not provided'}`,
     `Notes from Malcolm: ${org.notes||'None.'}`
   ].join('\n');
+}
+function escapeHtml(v){
+  return String(v??'')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
 }
 function cleanDraftText(text){
   return String(text||'').replace(/\r/g,'').replace(/\n{3,}/g,'\n\n').trim();
@@ -1326,11 +1381,16 @@ function syncProfilePreview(){
   const linkedin=read('cv-linkedin')||cvData.linkedin||'';
   const web=read('cv-web')||cvData.web||'';
   const summary=read('cv-summary')||cvData.summary||'Edit your CV once, then use this profile to generate platform-ready content, AI outreach drafts, and skill match reports.';
+  const emailEl=document.getElementById('profile-preview-email');
+  const linkedinEl=document.getElementById('profile-preview-linkedin');
+  const webEl=document.getElementById('profile-preview-web');
   document.getElementById('profile-preview-name').textContent=name;
   document.getElementById('profile-preview-title').textContent=title;
   document.getElementById('profile-preview-loc').textContent=loc;
-  document.getElementById('profile-preview-email').textContent=email||'Add your email address';
-  document.getElementById('profile-preview-links').textContent=[linkedin,web].filter(Boolean).join(' · ')||'Add LinkedIn and website links';
+  document.getElementById('profile-preview-loc-detail').textContent=loc;
+  emailEl.innerHTML=email?`<a href="mailto:${escapeHtml(email)}">${escapeHtml(email)}</a>`:'Add your email address';
+  linkedinEl.innerHTML=linkedin?`<a href="${escapeHtml(safeHref(linkedin))}" target="_blank" rel="noreferrer">${escapeHtml(linkedin.replace(/^https?:\/\//,''))}</a>`:'Add your LinkedIn profile';
+  webEl.innerHTML=web?`<a href="${escapeHtml(safeHref(web))}" target="_blank" rel="noreferrer">${escapeHtml(web.replace(/^https?:\/\//,''))}</a>`:'Add your website or portfolio';
   document.getElementById('profile-preview-summary').textContent=summary;
 }
 function renderSkillTags(){
