@@ -823,7 +823,12 @@ function renderList(){
   const filtered=currentFilter==='all'?orgs:orgs.filter(o=>o.status===currentFilter);
   const el=document.getElementById('list');
   if(!filtered.length){el.innerHTML='<div class="empty-box tracker-empty">No organizations match this filter.</div>';return;}
-  el.innerHTML=[...filtered].sort((a,b)=>safePriority(a.priority)-safePriority(b.priority)||textVal(a.name).localeCompare(textVal(b.name))).map(o=>{
+  const updatedAtValue=o=>Date.parse(textVal(o.updatedAt))||0;
+  el.innerHTML=[...filtered].sort((a,b)=>
+    safePriority(a.priority)-safePriority(b.priority)||
+    updatedAtValue(b)-updatedAtValue(a)||
+    textVal(a.name).localeCompare(textVal(b.name))
+  ).map(o=>{
     const priority=safePriority(o.priority);
     const status=safeStatus(o.status);
     const name=textVal(o.name)||'Untitled organization';
