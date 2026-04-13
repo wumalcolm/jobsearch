@@ -571,6 +571,136 @@ const DEFAULT_CV={
   skills:['Ecosystem Building','Innovation Hub Management','Program Design','Stakeholder Management','Grant Writing','Workshop Facilitation','Community Management','SME Development','Event Production','Startup Programs','Public-Private Partnerships','Strategic Planning']
 };
 
+function buildWriterProfile(){
+  const cv=cvData||DEFAULT_CV;
+  const skills=(cv.skills||[]).join(', ');
+  return [
+    `${cv.name} — ${cv.title}.`,
+    `Location: ${cv.loc}.`,
+    `Summary: ${cv.summary}`,
+    `Current role: ${cv.current}`,
+    `Previous experience: ${cv.prev}`,
+    `Languages: ${cv.langs}`,
+    `Skills: ${skills}`,
+    `LinkedIn: ${cv.linkedin||'Not provided'}`,
+    `Website: ${cv.web||'Not provided'}`
+  ].join('\n');
+}
+function buildOrgBrief(org){
+  if(!org)return 'Organization details unavailable.';
+  return [
+    `Organization: ${org.name}`,
+    `Type: ${org.type||'Not specified'}`,
+    `Location: ${org.location||'Not specified'}`,
+    `Lane: ${LL[org.lane]||org.lane||'Not specified'}`,
+    `Contact details: ${org.contact||'Not provided'}`,
+    `Website: ${org.website||'Not provided'}`,
+    `Notes from Malcolm: ${org.notes||'None.'}`
+  ].join('\n');
+}
+function cleanDraftText(text){
+  return String(text||'').replace(/\r/g,'').replace(/\n{3,}/g,'\n\n').trim();
+}
+function looksAbrupt(text){
+  const t=cleanDraftText(text);
+  if(!t)return true;
+  if(/(?:\b(and|or|but|with|for|to|of|a|an|the|my|our|your|their|this|that|is|are|was|were|be|being|been|have|has|had|I'm|I am|I have|I would|I can)\s*)$/i.test(t))return true;
+  return !/[.!?]$/.test(t);
+}
+function isWeakDraft(text,type){
+  const t=cleanDraftText(text);
+  if(!t)return true;
+  if(looksAbrupt(t))return true;
+  if(/my sights are firmly set|consistently surfaced|i hope this (email|message) finds you well|thrilled to apply|dear hiring manager/i.test(t))return true;
+  const words=t.split(/\s+/).filter(Boolean).length;
+  if(type==='email'){
+    const lines=t.split('\n').filter(Boolean);
+    return words<80||lines.length<4;
+  }
+  return words<180;
+}
+async function generateDraftText(org,type,strict=false){
+  const isEmail=type==='email';
+  const styleRules=[
+    'Write like a thoughtful operator, not a marketer.',
+    'Use plain English, short paragraphs, and concrete language.',
+    'Sound warm, direct, specific, and credible.',
+    'Do not use hype, grand claims, or generic flattery.',
+    'Do not use phrases like "my sights are firmly set", "consistently surfaced", or "I hope this email finds you well".',
+    'Do not invent facts, roles, projects, or hiring details.',
+    'Finish the draft completely. Do not trail off mid-sentence.'
+  ].join(' ');
+  const writerProfile=buildWriterProfile();
+  const orgBrief=buildOrgBrief(org);
+  const prompt=isEmail
+    ?`Return valid JSON only with keys "subject" and "body".
+
+${styleRules}
+
+Draft an outreach email Malcolm Wu would actually send.
+
+Requirements:
+- Subject: 5 to 9 words, clear and professional, no label, no emoji.
+- Body: 3 short paragraphs, 120 to 180 words total.
+- Open with "Dear ${org?.name||'team'} team," unless a specific contact person is provided.
+- Paragraph 1: why Malcolm is reaching out and why this organization is relevant now.
+- Paragraph 2: mention 2 to 3 concrete strengths from Malcolm's background that match this organization or role family.
+- Paragraph 3: light call to action and realistic next step.
+- End exactly with:
+Best,
+Malcolm Wu
+- No markdown. No placeholders. No bullet points.
+${strict?'- Make the email more specific and more natural than a generic first draft.\n- If the draft would sound vague, choose one concrete angle from Malcolm\'s background and build around it.':''}
+
+Candidate profile:
+${writerProfile}
+
+Organization context:
+${orgBrief}`
+    :`Return valid JSON only with key "letter".
+
+${styleRules}
+
+Draft a cover letter Malcolm Wu would actually send.
+
+Requirements:
+- Length: 260 to 340 words.
+- Exactly 4 short paragraphs.
+- Paragraph 1: direct opening tied to this organization and the type of contribution Malcolm wants to make.
+- Paragraph 2: 2 concrete achievements or responsibilities from Malcolm's background that transfer well.
+- Paragraph 3: why the organization is a realistic match, including adjacent fit if the match is not exact.
+- Paragraph 4: practical close with interest in speaking further.
+- End exactly with:
+Warm regards,
+Malcolm Wu
+- No markdown. No placeholders. No bullet points.
+${strict?'- Make the letter sharper, more grounded, and less generic than a first-pass AI cover letter.\n- If the organization fit is partial, acknowledge that honestly and frame the transfer value clearly.':''}
+
+Candidate profile:
+${writerProfile}
+
+Organization context:
+${orgBrief}`;
+  const raw=await callGemini({
+    maxTokens:isEmail?900:1400,
+    expectJson:true,
+    system:'You are Malcolm Wu\'s writing partner. Produce complete, natural-sounding professional drafts in clean JSON only.',
+    userMsg:prompt
+  });
+  const parsed=parseJSON(raw,'{');
+  if(!parsed)throw new Error('Could not structure the generated draft.');
+  if(isEmail){
+    const subject=cleanDraftText(parsed.subject);
+    const body=cleanDraftText(parsed.body);
+    const full=cleanDraftText(`${subject}\n\n${body}`);
+    if(!subject||!body)throw new Error('Incomplete email draft returned.');
+    return full;
+  }
+  const letter=cleanDraftText(parsed.letter);
+  if(!letter)throw new Error('Incomplete cover letter returned.');
+  return letter;
+}
+
 const PLATFORMS=[
   {id:'linkedin',name:'LinkedIn Jobs',icon:'🔗',color:'#0A66C2',type:'Global · Most important',desc:'#1 platform for professional outreach. Strong in Bosnia, EU NGOs and remote roles.',search:'https://www.linkedin.com/jobs/search/?keywords=program+manager+ecosystem+builder+innovation&location=Bosnia+and+Herzegovina',profile:'https://www.linkedin.com/profile/edit/',profileLabel:'Edit LinkedIn Profile'},
   {id:'indeed',name:'Indeed',icon:'🔎',color:'#2164f3',type:'Global · High volume',desc:'Largest job board globally. Good for Bosnia local and international orgs.',search:'https://www.indeed.com/jobs?q=program+manager+ngo+innovation&l=Bosnia+and+Herzegovina',profile:'https://my.indeed.com/resume',profileLabel:'Build Indeed Resume'},
@@ -1288,13 +1418,10 @@ function regen(){
   genDraft(org,aiState.type);
 }
 async function genDraft(org,type){
-  const isE=type==='email';
   try{
-    const res=await callGemini({maxTokens:1000,
-      system:'Write warm, direct, confident outreach emails and cover letters for Malcolm Wu. Never sound like AI. Output ONLY the final text.',
-      userMsg:isE
-        ?`Short outreach email from Malcolm to ${org.name} (${org.type}, ${org.location}).\nMalcolm: ${MALCOLM}\nNotes: ${org.notes||'None.'}\nFirst line = subject (no label). Under 200 words. If notes say referral only, write networking email. End: Malcolm Wu.`
-        :`Cover letter from Malcolm Wu for ${org.name} (${org.type}, ${org.location}).\nMalcolm: ${MALCOLM}\nNotes: ${org.notes||'None.'}\n3-4 paragraphs, 300-380 words. Hook, experience, why this org, call to action. End: Warm regards, Malcolm Wu.`});
+    let res=await generateDraftText(org,type,false);
+    if(isWeakDraft(res,type))res=await generateDraftText(org,type,true);
+    const isE=type==='email';
     if(isE)aiState.eText=res;else aiState.cText=res;
     document.getElementById('ai-out').value=res||'No output.';
     document.getElementById('ai-out').className='ai-out';
@@ -1313,11 +1440,31 @@ async function rewriteDraft(){
   try{
     const res=await callGemini({
       maxTokens:1200,
-      system:'You are an editing partner. Rewrite the provided draft while preserving the writer\'s intent, facts, and voice notes. Output ONLY the revised draft.',
-      userMsg:`Rewrite this ${isE?'outreach email':'cover letter'} for Malcolm Wu.\nOrganization: ${org?.name||''} (${org?.type||''}, ${org?.location||''})\nMalcolm profile: ${MALCOLM}\nOrg notes: ${org?.notes||'None.'}\nStyle instructions: ${instructions}\n\nCurrent draft:\n${draft||''}`
+      system:'You are an editing partner for Malcolm Wu. Rewrite the provided draft so it sounds human, specific, complete, and natural. Preserve facts. Output ONLY the revised draft.',
+      userMsg:`Rewrite this ${isE?'outreach email':'cover letter'} for Malcolm Wu.
+
+Candidate profile:
+${buildWriterProfile()}
+
+Organization context:
+${buildOrgBrief(org)}
+
+Style instructions:
+${instructions}
+
+Rules:
+- Keep the core intent and facts.
+- Make the writing more specific and less generic.
+- Remove hype, filler, and corporate language.
+- Finish every sentence and every paragraph cleanly.
+- Do not add made-up facts.
+
+Current draft:
+${draft||''}`
     });
-    if(isE)aiState.eText=res;else aiState.cText=res;
-    document.getElementById('ai-out').value=res||'No output.';
+    const next=cleanDraftText(res);
+    if(isE)aiState.eText=next;else aiState.cText=next;
+    document.getElementById('ai-out').value=next||'No output.';
     document.getElementById('ai-out').className='ai-out';
   }catch(e){
     document.getElementById('ai-out').className='ai-out';
