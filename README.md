@@ -2,6 +2,8 @@
 
 Static HTML app ready for GitHub Pages deployment.
 
+Last Pages refresh: 2026-04-14
+
 ## Local preview
 
 ```bash
