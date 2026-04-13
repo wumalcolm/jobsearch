@@ -23,9 +23,10 @@
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:linear-gradient(180deg,#f8fbff 0,#f7f9fc 180px,var(--bg) 100%);color:var(--ink);font-size:14px}
 .header{background:linear-gradient(135deg,#ffffff 0,#f6f9fe 100%);color:var(--ink);padding:18px 24px 0;border-bottom:1px solid var(--line);box-shadow:0 1px 0 rgba(16,24,40,.02)}
-.header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px;gap:12px}
 .header h1{font-size:24px;font-weight:700;margin-bottom:4px;letter-spacing:-.02em}
 .header p{font-size:12px;color:var(--muted)}
+.brand-pill{display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:999px;border:1px solid #d2e3fc;background:var(--brand-soft);color:#174ea6;font-size:12px;font-weight:700;white-space:nowrap}
 .nav-tabs{display:flex;overflow-x:auto}
 .nav-tab{padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#5f6368;border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s}
 .nav-tab.active{color:var(--brand);border-bottom-color:var(--brand)}
@@ -64,7 +65,7 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .fbtn{padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;font-size:12px;color:#3c4043}
 .fbtn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .add-btn{margin-left:auto;padding:9px 16px;background:var(--brand);color:#fff;border:none;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(26,115,232,.3)}
-.t-list{padding:0 24px 24px;display:flex;flex-direction:column;gap:14px}
+.t-list{padding:0 24px 24px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
 .tc{background:var(--surface);border-radius:24px;border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow)}
 .tc:hover{box-shadow:0 10px 28px rgba(16,24,40,.08)}
 .tc-top{padding:18px 20px 10px;display:flex;gap:14px;align-items:flex-start}
@@ -85,8 +86,11 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .tc-contact{padding:0 20px 10px 60px;font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
 .tc-contact a{color:var(--brand)}
 .tc-notes{padding:0 20px 10px 60px}
-.ni{width:100%;font-size:13px;color:#374151;border:1px solid var(--line);border-radius:14px;padding:10px 12px;resize:none;font-family:inherit;min-height:44px;background:var(--surface-alt)}
+.ni{width:100%;font-size:13px;color:#374151;border:1px solid var(--line);border-radius:14px;padding:10px 12px;resize:vertical;font-family:inherit;min-height:72px;background:var(--surface-alt)}
 .ni:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(26,115,232,.12)}
+.tracker-empty{grid-column:1/-1}
+@media(max-width:1180px){.t-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:760px){.t-list{grid-template-columns:1fr}}
 .tc-actions{padding:0 20px 18px 60px;display:flex;gap:8px;flex-wrap:wrap}
 .ai-btn{padding:8px 13px;border-radius:999px;border:1px solid;font-size:12px;font-weight:600;cursor:pointer}
 .ai-btn:hover{opacity:.85}
@@ -220,6 +224,7 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 <div class="header">
   <div class="header-top">
     <div><h1>Malcolm's Job Outreach Tracker</h1><p>Tracker · Discover · Skill Match · Job Boards · My Profile</p></div>
+    <div class="brand-pill">Powered by Gemini</div>
   </div>
   <div class="nav-tabs">
     <button class="nav-tab active" onclick="showView('tracker')">📋 Tracker</button>
@@ -229,7 +234,7 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
     <button class="nav-tab" onclick="showView('profile')">📄 My Profile</button>
   </div>
 </div>
-<div class="info-banner">🤖 Powered by <strong>Gemini</strong> — save your Gemini API key in My Profile to enable AI features <span style="opacity:.7">· v2026-04-14d</span></div>
+<div class="info-banner">Save your Gemini API key in My Profile to enable AI features.</div>
 
 <!-- TRACKER -->
 <div id="tracker-view" class="view active">
@@ -686,7 +691,7 @@ function renderStats(){
 function renderList(){
   const filtered=currentFilter==='all'?orgs:orgs.filter(o=>o.status===currentFilter);
   const el=document.getElementById('list');
-  if(!filtered.length){el.innerHTML='<div class="empty-box">No organizations match this filter.</div>';return;}
+  if(!filtered.length){el.innerHTML='<div class="empty-box tracker-empty">No organizations match this filter.</div>';return;}
   el.innerHTML=[...filtered].sort((a,b)=>safePriority(a.priority)-safePriority(b.priority)||textVal(a.name).localeCompare(textVal(b.name))).map(o=>{
     const priority=safePriority(o.priority);
     const status=safeStatus(o.status);
