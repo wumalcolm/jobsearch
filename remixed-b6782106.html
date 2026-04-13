@@ -523,7 +523,7 @@ async function callGemini({system,userMsg,useSearch=false,maxTokens=2000}){
   if(useSearch)body.tools=[{google_search:{}}];
   let res,data;
   try{
-    res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(geminiApiKey)}`,{
+    res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(geminiApiKey)}`,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify(body)
