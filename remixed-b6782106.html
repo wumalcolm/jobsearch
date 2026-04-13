@@ -520,7 +520,7 @@ async function callGemini({system,userMsg,useSearch=false,maxTokens=2000,expectJ
     contents:[{role:'user',parts:[{text:prompt}]}],
     generationConfig:{maxOutputTokens:maxTokens}
   };
-  if(expectJson)body.generationConfig.responseMimeType='application/json';
+  if(expectJson&&!useSearch)body.generationConfig.responseMimeType='application/json';
   if(useSearch)body.tools=[{google_search:{}}];
   let res,data;
   try{
@@ -545,7 +545,10 @@ async function callGemini({system,userMsg,useSearch=false,maxTokens=2000,expectJ
 function parseJSON(raw,sc){
   if(!raw)return null;
   try{
-    const c=raw.replace(/```json|```/g,'').trim();
+    const c=raw
+      .replace(/```json|```/gi,'')
+      .replace(/^Here(?:'s| is).*?[\r\n]+/i,'')
+      .trim();
     const s=c.indexOf(sc),e=sc==='{'?c.lastIndexOf('}'):c.lastIndexOf(']');
     if(s!==-1&&e>s)return JSON.parse(c.slice(s,e+1));
   }catch(e){console.warn('parseJSON failed:',e.message,raw.substring(0,200));}
@@ -640,7 +643,7 @@ async function runDiscover(){
   const btn=document.getElementById('disc-btn');btn.disabled=true;btn.textContent='Searching…';
   document.getElementById('disc-results').innerHTML=`<div class="loading-box"><div class="big-spin"></div><p>Searching the web…</p></div>`;
   try{
-    const res=await callGemini({useSearch:true,maxTokens:2000,expectJson:true,
+    const res=await callGemini({useSearch:true,maxTokens:2000,
       system:'Search the web for real organizations. Respond with ONLY a raw JSON array — no markdown, no explanation.',
       userMsg:`Find real organizations in "${region}" of type "${type}" matching Malcolm's profile:\n${MALCOLM}\nSearch: "${q}"\nReturn JSON array of 5-8 orgs with keys: name, location, type, lane(local/erasmus/eor/network), priority(1-3), website, contact, why_fit, notes`});
     const recs=parseJSON(res,'[');
@@ -679,7 +682,7 @@ async function runMatch(){
   document.getElementById('match-result').innerHTML=`<div class="loading-box"><div class="big-spin"></div><p>Researching <strong>${input}</strong> and matching against your CV…</p></div>`;
   const isURL=/^(https?:\/\/|www\.)|[a-z0-9-]+\.[a-z]{2,}$/i.test(input);
   try{
-    const res=await callGemini({useSearch:true,maxTokens:2000,expectJson:true,
+    const res=await callGemini({useSearch:true,maxTokens:2000,
       system:'Research the organization using web search. Respond with ONLY a raw JSON object — no markdown, no text before or after the JSON.',
       userMsg:`Analyze this org for job fit with Malcolm Wu.\n${isURL?'Website: '+input:'Organization: '+input}\n\nMalcolm:\n${MALCOLM}\n\nReturn one JSON object with keys: company_name, company_overview, company_type, location, website, contact, match_score(0-100 integer), match_level("Strong Match"/"Good Match"/"Partial Match"/"Weak Match"), matched_skills(array), skill_gaps(array), transferable_skills(array), recommended_roles(array), key_talking_points(array), approach_strategy, lane(local/erasmus/eor/network), priority(1-3), notes`});
     const result=parseJSON(res,'{');
@@ -781,7 +784,7 @@ async function runHunt(){
   const btn=document.getElementById('hunt-btn');btn.disabled=true;btn.textContent='Searching…';
   document.getElementById('hunt-results').innerHTML=`<div class="loading-box"><div class="big-spin"></div><p>Searching LinkedIn, Indeed, ReliefWeb, DevEx, EURES…</p></div>`;
   try{
-    const res=await callGemini({useSearch:true,maxTokens:2000,expectJson:true,
+    const res=await callGemini({useSearch:true,maxTokens:2000,
       system:'Search for real job listings. Respond with ONLY a raw JSON array — no markdown, no explanation.',
       userMsg:`Search LinkedIn, Indeed, ReliefWeb, DevEx, EURES, Idealist for current open jobs.\nRole: "${role}" Location: "${loc}"\nMalcolm: ${MALCOLM}\nFind 5-8 real open listings. Return JSON array with keys: title, company, location, platform, url, description, match_score(0-100), why_fit, posted`});
     const jobs=parseJSON(res,'[');
