@@ -105,35 +105,54 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .sub-tab{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
 .sub-tab.active{color:#0D1B2A;border-bottom-color:#0DB5B5}
 .sub-section{display:none}.sub-section.active{display:block}
+.jobs-layout{display:grid;grid-template-columns:minmax(300px,360px) minmax(0,1fr);gap:18px;align-items:start}
+.jobs-side{position:sticky;top:24px;display:flex;flex-direction:column;gap:14px}
+.jobs-panel{background:var(--surface);border:1px solid var(--line);border-radius:24px;box-shadow:var(--shadow);padding:18px}
+.jobs-panel-title{font-size:12px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#6b7280;margin-bottom:10px}
+.jobs-panel-sub{font-size:12px;color:#6b7280;line-height:1.55}
+.jobs-tip-list{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.jobs-tip{padding:11px 12px;border-radius:16px;background:linear-gradient(180deg,#f8fbff 0,#f1f6ff 100%);border:1px solid #d8e4fb;font-size:12px;color:#35506b;line-height:1.55}
+.jobs-main{display:flex;flex-direction:column;gap:18px}
 .platform-groups{display:flex;flex-direction:column;gap:18px}
-.platform-group{display:flex;flex-direction:column;gap:10px}
-.platform-group-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.platform-group-title{font-size:14px;font-weight:700;color:#1f2937}
-.platform-group-note{font-size:12px;color:#6b7280}
-.platform-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
-.platform-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px 16px}
-.platform-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
-.platform-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.platform-name{font-size:13px;font-weight:700}.platform-type{font-size:11px;color:#6b7280}
-.platform-desc{font-size:12px;color:#374151;margin-bottom:10px;line-height:1.5}
-.platform-btns{display:flex;gap:7px}
-.p-search-btn{flex:1;padding:7px 10px;background:#0D1B2A;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;text-align:center;text-decoration:none;display:block}
-.p-profile-btn{flex:1;padding:7px 10px;background:#fff;color:#374151;border:1.5px solid #d1d5db;border-radius:7px;font-size:11px;font-weight:600;text-align:center;text-decoration:none;display:block}
-.p-status{display:flex;align-items:center;gap:5px;margin-bottom:8px}
-.p-dot{width:7px;height:7px;border-radius:50%}
-@media(max-width:1180px){.platform-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-@media(max-width:760px){.platform-grid{grid-template-columns:1fr;}}
-.job-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px 16px;margin-bottom:10px}
+.platform-group{display:flex;flex-direction:column;gap:12px;padding:18px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,#ffffff 0,#fbfdff 100%);box-shadow:var(--shadow)}
+.platform-group-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.platform-group-title{font-size:18px;font-weight:700;color:#1f2937}
+.platform-group-note{font-size:13px;color:#6b7280;max-width:620px;line-height:1.55}
+.platform-group-badge{padding:6px 10px;border-radius:999px;background:#eef3fd;color:#174ea6;font-size:11px;font-weight:700}
+.platform-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.platform-card{background:#fff;border-radius:22px;border:1px solid #e5eaf2;padding:18px;display:flex;flex-direction:column;gap:12px;min-height:100%;box-shadow:0 1px 2px rgba(16,24,40,.03),0 12px 24px rgba(16,24,40,.05)}
+.platform-card:hover{transform:translateY(-1px);box-shadow:0 12px 30px rgba(16,24,40,.08)}
+.platform-head{display:flex;align-items:flex-start;gap:12px}
+.platform-icon{width:48px;height:48px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;border:1px solid rgba(255,255,255,.7)}
+.platform-copy{display:flex;flex-direction:column;gap:4px}
+.platform-name{font-size:16px;font-weight:700;line-height:1.2}
+.platform-type{font-size:12px;color:#6b7280;line-height:1.4}
+.platform-desc{font-size:13px;color:#374151;line-height:1.65;flex:1}
+.platform-btns{display:flex;gap:8px;margin-top:auto}
+.p-search-btn{flex:1;padding:10px 12px;background:#0D1B2A;color:#fff;border:none;border-radius:14px;font-size:12px;font-weight:700;text-align:center;text-decoration:none;display:block}
+.p-profile-btn{flex:1;padding:10px 12px;background:#fff;color:#374151;border:1.5px solid #d1d5db;border-radius:14px;font-size:12px;font-weight:600;text-align:center;text-decoration:none;display:block}
+.p-status{display:flex;align-items:center;gap:6px}
+.p-dot{width:8px;height:8px;border-radius:50%}
+.jobs-results-shell{padding:0;overflow:hidden}
+.jobs-results-head{padding:18px 20px;border-bottom:1px solid #e5e7eb;display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.jobs-results-title{font-size:16px;font-weight:700;color:#1f2937}
+.jobs-results-meta{font-size:12px;color:#6b7280;line-height:1.5}
+.jobs-results-list{padding:18px}
+.jobs-results-list .loading-box,.jobs-results-list .empty-box{padding:48px 12px}
+.jobs-count-pill{padding:7px 12px;border-radius:999px;background:#eef3fd;color:#174ea6;font-size:11px;font-weight:700}
+.job-card{background:#fff;border-radius:18px;border:1px solid #e5e7eb;padding:16px 18px;margin-bottom:12px;box-shadow:0 1px 2px rgba(16,24,40,.03)}
 .job-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:5px}
-.job-title{font-size:13px;font-weight:700}
-.job-score{flex-shrink:0;font-size:12px;font-weight:800;padding:3px 8px;border-radius:7px}
+.job-title{font-size:15px;font-weight:700;line-height:1.35}
+.job-score{flex-shrink:0;font-size:12px;font-weight:800;padding:5px 10px;border-radius:999px}
 .sc-hi{background:#ecfdf5;color:#065f46}.sc-mid{background:#fef9ec;color:#78350f}.sc-lo{background:#fee2e2;color:#991b1b}
-.job-meta{font-size:11px;color:#6b7280;margin-bottom:7px;display:flex;gap:10px;flex-wrap:wrap}
-.job-desc{font-size:12px;color:#374151;line-height:1.55;margin-bottom:9px}
-.job-footer{display:flex;gap:7px;flex-wrap:wrap}
-.job-apply{padding:5px 12px;background:#0DB5B5;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none;display:inline-block}
-.job-save{padding:5px 12px;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#5b21b6;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer}
+.job-meta{font-size:12px;color:#6b7280;margin-bottom:9px;display:flex;gap:10px;flex-wrap:wrap}
+.job-desc{font-size:13px;color:#374151;line-height:1.65;margin-bottom:10px}
+.job-footer{display:flex;gap:8px;flex-wrap:wrap}
+.job-apply{padding:9px 14px;background:#0DB5B5;color:#fff;border:none;border-radius:12px;font-size:12px;font-weight:700;text-decoration:none;display:inline-block}
+.job-save{padding:9px 14px;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#5b21b6;border-radius:12px;font-size:12px;font-weight:600;cursor:pointer}
 .job-save.saved{background:#d1fae5;border-color:#6ee7b7;color:#065f46;cursor:default}
+@media(max-width:1180px){.jobs-layout{grid-template-columns:1fr}.jobs-side{position:static}.platform-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:760px){.platform-grid{grid-template-columns:1fr}.platform-btns{flex-direction:column}}
 /* SKILL MATCH */
 .match-result{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:14px}
 .match-head{padding:15px 17px 12px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
@@ -174,15 +193,36 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .rec-meta{font-size:11px;color:#6b7280;margin-bottom:6px}
 .rec-why{font-size:12px;color:#374151;line-height:1.5;margin-bottom:7px;padding:7px 9px;background:#f8fafc;border-radius:6px;border-left:3px solid #0DB5B5}
 /* PROFILE */
-.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+.profile-shell{display:grid;grid-template-columns:minmax(280px,340px) minmax(0,1fr);gap:18px;align-items:start}
+.profile-side{display:flex;flex-direction:column;gap:16px;position:sticky;top:24px}
+.profile-card{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:var(--shadow)}
+.profile-kicker{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#6b7280;margin-bottom:10px}
+.profile-preview-name{font-size:22px;font-weight:700;line-height:1.2;letter-spacing:-.02em}
+.profile-preview-title{margin-top:6px;font-size:14px;color:#35506b;line-height:1.5}
+.profile-preview-meta{display:flex;flex-direction:column;gap:8px;margin-top:14px;font-size:13px;color:#4b5563}
+.profile-preview-summary{margin-top:14px;padding:14px;border-radius:18px;background:linear-gradient(180deg,#f8fbff 0,#f2f7ff 100%);border:1px solid #dbe7fb;font-size:13px;color:#35506b;line-height:1.7}
+.profile-form-wrap{display:flex;flex-direction:column;gap:16px}
+.profile-section{background:var(--surface);border:1px solid var(--line);border-radius:24px;padding:18px;box-shadow:var(--shadow)}
+.profile-section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.profile-section-title{font-size:16px;font-weight:700}
+.profile-section-note{font-size:12px;color:#6b7280;line-height:1.5;max-width:520px}
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:960px){.profile-shell{grid-template-columns:1fr}.profile-side{position:static}}
 @media(max-width:600px){.profile-grid{grid-template-columns:1fr}}
 .pf{display:flex;flex-direction:column;gap:4px}
 .pf label{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em}
-.pf input,.pf textarea{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit}
+.pf input,.pf textarea{padding:11px 12px;border:1px solid #d1d5db;border-radius:14px;font-size:13px;font-family:inherit;background:#fff}
 .pf input:focus,.pf textarea:focus{outline:none;border-color:#0DB5B5}
-.pf textarea{resize:vertical;min-height:68px}
+.pf textarea{resize:vertical;min-height:120px;line-height:1.6}
 .fw{grid-column:1/-1}
 .skill-remove{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af;cursor:pointer}
+.profile-actions{display:flex;gap:10px;flex-wrap:wrap}
+.profile-skill-row{display:flex;gap:8px;margin-bottom:8px}
+.profile-skill-row input{flex:1;padding:11px 12px;border:1px solid #d1d5db;border-radius:14px;font-size:13px;font-family:inherit}
+.profile-skill-row button{padding:10px 14px;border:none;border-radius:14px;background:#0D1B2A;color:#fff;cursor:pointer;font-size:12px;font-weight:700}
+.api-key-row{display:flex;gap:8px}
+.api-key-row input{flex:1}
+.profile-key-help{font-size:11px;color:#6b7280;line-height:1.6;margin-top:10px}
 .export-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
 .export-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px}
 .export-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
@@ -324,24 +364,47 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
       <button class="sub-tab active" onclick="showSub('platforms')">🌐 Platforms</button>
       <button class="sub-tab" onclick="showSub('ai-hunt')">🤖 AI Job Hunt</button>
     </div>
-    <div id="platforms-sub" class="sub-section active"><div class="platform-grid" id="platform-grid"></div></div>
+    <div id="platforms-sub" class="sub-section active"><div id="platform-grid"></div></div>
     <div id="ai-hunt-sub" class="sub-section">
-      <div class="white-box">
-        <span class="box-label">Search for live job listings</span>
-        <div class="input-row">
-          <input id="hunt-role" value="program manager ecosystem innovation NGO" placeholder="Role keywords">
-          <select id="hunt-loc"><option value="Bosnia Herzegovina">Bosnia & Herzegovina</option><option value="Banja Luka">Banja Luka</option><option value="Sarajevo">Sarajevo</option><option value="remote Europe">Remote Europe</option><option value="Germany">Germany</option><option value="Netherlands">Netherlands</option><option value="worldwide">Worldwide</option></select>
+      <div class="jobs-layout">
+        <div class="jobs-side">
+          <div class="jobs-panel">
+            <div class="jobs-panel-title">Search for live job listings</div>
+            <div class="input-row">
+              <input id="hunt-role" value="program manager ecosystem innovation NGO" placeholder="Role keywords">
+              <select id="hunt-loc"><option value="Bosnia Herzegovina">Bosnia & Herzegovina</option><option value="Banja Luka">Banja Luka</option><option value="Sarajevo">Sarajevo</option><option value="remote Europe">Remote Europe</option><option value="Germany">Germany</option><option value="Netherlands">Netherlands</option><option value="worldwide">Worldwide</option></select>
+            </div>
+            <div class="chips">
+              <span class="chip" onclick="setHunt('Erasmus+ project coordinator Bosnia')">Erasmus+ Coordinator</span>
+              <span class="chip" onclick="setHunt('innovation hub manager Bosnia Herzegovina')">Hub Manager</span>
+              <span class="chip" onclick="setHunt('NGO program officer Bosnia')">NGO Program Officer</span>
+              <span class="chip" onclick="setHunt('community manager remote Europe startup')">Remote Community Mgr</span>
+              <span class="chip" onclick="setHunt('GIZ consultant trainer Bosnia')">GIZ Trainer</span>
+            </div>
+            <button class="big-btn" id="hunt-btn" onclick="runHunt()">🤖 Find live job listings</button>
+          </div>
+          <div class="jobs-panel">
+            <div class="jobs-panel-title">How to use this</div>
+            <div class="jobs-tip-list">
+              <div class="jobs-tip">Start with a role phrase like <strong>program manager</strong>, <strong>innovation hub</strong>, or <strong>Erasmus+</strong> so Gemini looks for better-fit openings.</div>
+              <div class="jobs-tip">Results stay visible on the right so you can refine the search without losing what you already found.</div>
+              <div class="jobs-tip">Use <strong>Save to Tracker</strong> when a listing looks promising, then draft outreach from your Tracker.</div>
+            </div>
+          </div>
         </div>
-        <div class="chips">
-          <span class="chip" onclick="setHunt('Erasmus+ project coordinator Bosnia')">Erasmus+ Coordinator</span>
-          <span class="chip" onclick="setHunt('innovation hub manager Bosnia Herzegovina')">Hub Manager</span>
-          <span class="chip" onclick="setHunt('NGO program officer Bosnia')">NGO Program Officer</span>
-          <span class="chip" onclick="setHunt('community manager remote Europe startup')">Remote Community Mgr</span>
-          <span class="chip" onclick="setHunt('GIZ consultant trainer Bosnia')">GIZ Trainer</span>
+        <div class="jobs-main">
+          <div class="jobs-panel jobs-results-shell">
+            <div class="jobs-results-head">
+              <div>
+                <div class="jobs-results-title">AI Hunt Results</div>
+                <div class="jobs-results-meta" id="hunt-meta">Run a search to keep live job leads visible here while you refine the query on the left.</div>
+              </div>
+              <div class="jobs-count-pill" id="hunt-count">0 results</div>
+            </div>
+            <div id="hunt-results" class="jobs-results-list"><div class="empty-box">No results yet. Start a search and your live leads will appear here.</div></div>
+          </div>
         </div>
-        <button class="big-btn" id="hunt-btn" onclick="runHunt()">🤖 Find live job listings</button>
       </div>
-      <div id="hunt-results"></div>
     </div>
   </div>
 </div>
@@ -355,36 +418,77 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
       <button class="sub-tab" onclick="showProfileSub('platform-export')">🚀 Export to Platforms</button>
     </div>
     <div id="cv-editor-sub" class="sub-section active">
-      <div class="white-box">
-        <div class="profile-grid">
-          <div class="pf"><label>Full Name</label><input id="cv-name"></div>
-          <div class="pf"><label>Current Title</label><input id="cv-title"></div>
-          <div class="pf"><label>Location</label><input id="cv-loc"></div>
-          <div class="pf"><label>Email</label><input id="cv-email" type="email"></div>
-          <div class="pf"><label>LinkedIn URL</label><input id="cv-linkedin"></div>
-          <div class="pf"><label>Website</label><input id="cv-web"></div>
-          <div class="pf fw"><label>Professional Summary</label><textarea id="cv-summary"></textarea></div>
-          <div class="pf fw"><label>Current Role & Responsibilities</label><textarea id="cv-current"></textarea></div>
-          <div class="pf fw"><label>Previous Experience</label><textarea id="cv-prev"></textarea></div>
-          <div class="pf fw"><label>Languages</label><input id="cv-langs"></div>
-        </div>
-        <span class="box-label">Skills</span>
-        <div style="display:flex;gap:7px;margin-bottom:8px">
-          <input id="skill-in" placeholder="Type a skill and press Enter..." style="flex:1;padding:7px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;font-family:inherit" onkeydown="addSkill(event)">
-          <button onclick="addSkill({key:'Enter'})" style="padding:7px 12px;border:none;border-radius:7px;background:#0D1B2A;color:#fff;cursor:pointer;font-size:12px">Add</button>
-        </div>
-        <div class="tags" id="skills-tags"></div>
-        <div style="margin-top:14px;display:flex;gap:8px">
-          <button onclick="saveProfile()" style="padding:8px 16px;background:#0DB5B5;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">💾 Save Profile</button>
-          <button onclick="loadDefaultProfile()" style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:12px;cursor:pointer;background:#fff">↺ Reset</button>
-        </div>
-        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e5e7eb">
-          <span class="box-label">Gemini API Key</span>
-          <div class="input-row" style="margin-bottom:8px">
-            <input id="gemini-key" type="password" placeholder="Paste Gemini API key (AIza...)">
-            <button onclick="saveGeminiKey()" style="padding:8px 14px;background:#0D1B2A;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Save Key</button>
+      <div class="profile-shell">
+        <aside class="profile-side">
+          <div class="profile-card">
+            <div class="profile-kicker">Profile preview</div>
+            <div class="profile-preview-name" id="profile-preview-name">Malcolm Wu</div>
+            <div class="profile-preview-title" id="profile-preview-title">Strategic Manager | Startup Ecosystem Builder | Innovation Program Designer</div>
+            <div class="profile-preview-meta">
+              <div id="profile-preview-loc">Banja Luka, Bosnia & Herzegovina</div>
+              <div id="profile-preview-email">wu.malcolm@gmail.com</div>
+              <div id="profile-preview-links">linkedin.com/in/wumalcolm · malcolmwu.com</div>
+            </div>
+            <div class="profile-preview-summary" id="profile-preview-summary">Edit your CV once, then use this profile to generate platform-ready content, AI outreach drafts, and skill match reports.</div>
           </div>
-          <p style="font-size:11px;color:#6b7280;line-height:1.5">Stored locally in this app. AI search, matching, job hunt, and drafting all use Gemini.</p>
+          <div class="profile-card">
+            <div class="profile-kicker">Gemini setup</div>
+            <div class="api-key-row">
+              <input id="gemini-key" type="password" placeholder="Paste Gemini API key (AIza...)">
+              <button onclick="saveGeminiKey()" style="padding:10px 14px;background:#0D1B2A;color:#fff;border:none;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer">Save Key</button>
+            </div>
+            <p class="profile-key-help">Stored locally in this app. AI search, matching, job hunt, and drafting all use Gemini.</p>
+          </div>
+        </aside>
+        <div class="profile-form-wrap">
+          <div class="profile-section">
+            <div class="profile-section-head">
+              <div>
+                <div class="profile-section-title">Core identity</div>
+                <div class="profile-section-note">Keep this concise and recruiter-friendly. These fields power your platform exports and profile preview.</div>
+              </div>
+            </div>
+            <div class="profile-grid">
+              <div class="pf"><label>Full Name</label><input id="cv-name"></div>
+              <div class="pf"><label>Current Title</label><input id="cv-title"></div>
+              <div class="pf"><label>Location</label><input id="cv-loc"></div>
+              <div class="pf"><label>Email</label><input id="cv-email" type="email"></div>
+              <div class="pf"><label>LinkedIn URL</label><input id="cv-linkedin"></div>
+              <div class="pf"><label>Website</label><input id="cv-web"></div>
+              <div class="pf fw"><label>Languages</label><input id="cv-langs"></div>
+            </div>
+          </div>
+          <div class="profile-section">
+            <div class="profile-section-head">
+              <div>
+                <div class="profile-section-title">Narrative and positioning</div>
+                <div class="profile-section-note">Use these longer sections to shape how Gemini writes your summaries, outreach drafts, and cover letters.</div>
+              </div>
+            </div>
+            <div class="profile-grid">
+              <div class="pf fw"><label>Professional Summary</label><textarea id="cv-summary"></textarea></div>
+              <div class="pf fw"><label>Current Role & Responsibilities</label><textarea id="cv-current"></textarea></div>
+              <div class="pf fw"><label>Previous Experience</label><textarea id="cv-prev"></textarea></div>
+            </div>
+          </div>
+          <div class="profile-section">
+            <div class="profile-section-head">
+              <div>
+                <div class="profile-section-title">Skills and actions</div>
+                <div class="profile-section-note">Keep your strongest capabilities visible here so exports and AI matches stay aligned with your real experience.</div>
+              </div>
+            </div>
+            <span class="box-label">Skills</span>
+            <div class="profile-skill-row">
+              <input id="skill-in" placeholder="Type a skill and press Enter..." onkeydown="addSkill(event)">
+              <button onclick="addSkill({key:'Enter'})">Add</button>
+            </div>
+            <div class="tags" id="skills-tags"></div>
+            <div class="profile-actions" style="margin-top:14px">
+              <button onclick="saveProfile()" style="padding:10px 16px;background:#0DB5B5;color:#fff;border:none;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer">💾 Save Profile</button>
+              <button onclick="loadDefaultProfile()" style="padding:10px 14px;border:1.5px solid #d1d5db;border-radius:14px;font-size:12px;cursor:pointer;background:#fff">↺ Reset</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -546,7 +650,7 @@ async function load(){
   try{const c=await storage.get('cv-data');if(c&&c.value)cvData={...DEFAULT_CV,...JSON.parse(c.value)};}catch{}
   try{const p=await storage.get('plat-status');if(p&&p.value)platformStatus=JSON.parse(p.value);}catch{}
   try{const k=await storage.get('gemini-api-key');if(k&&k.value)geminiApiKey=k.value;}catch{}
-  render();renderPlatforms();loadCVForm();renderMatchHist();
+  render();renderPlatforms();loadCVForm();bindProfileInputs();renderMatchHist();
   syncGeminiKeyUI();
 }
 function mergeOrgs(defs,saved){
@@ -948,6 +1052,7 @@ function renderPlatforms(){
     </div>`;
   };
   const grouped=PLATFORM_GROUPS.map(group=>{
+    const count=group.ids.length;
     const cards=group.ids
       .map(id=>PLATFORMS.find(p=>p.id===id))
       .filter(Boolean)
@@ -955,8 +1060,11 @@ function renderPlatforms(){
       .join('');
     return `<section class="platform-group">
       <div class="platform-group-head">
-        <div class="platform-group-title">${group.title}</div>
-        <div class="platform-group-note">${group.note}</div>
+        <div>
+          <div class="platform-group-title">${group.title}</div>
+          <div class="platform-group-note">${group.note}</div>
+        </div>
+        <div class="platform-group-badge">${count} platforms</div>
       </div>
       <div class="platform-grid">${cards}</div>
     </section>`;
@@ -992,6 +1100,8 @@ async function runHunt(){
   const role=document.getElementById('hunt-role').value.trim();
   const loc=document.getElementById('hunt-loc').value;
   const btn=document.getElementById('hunt-btn');btn.disabled=true;btn.textContent='Searching…';
+  document.getElementById('hunt-meta').textContent=`Searching live job boards for "${role}" in ${loc}…`;
+  document.getElementById('hunt-count').textContent='Searching…';
   document.getElementById('hunt-results').innerHTML=`<div class="loading-box"><div class="big-spin"></div><p>Searching LinkedIn, Indeed, ReliefWeb, DevEx, EURES…</p></div>`;
   try{
     const jobs=await searchThenStructure({
@@ -1000,9 +1110,15 @@ async function runHunt(){
       researchPrompt:`Search LinkedIn, Indeed, ReliefWeb, DevEx, EURES, and Idealist for current open jobs.\nRole: "${role}"\nLocation: "${loc}"\nMalcolm:\n${MALCOLM}\nGather 5-8 real listings with title, company, location, platform, URL, short description, why it fits Malcolm, and posted timing if available.`,
       structurePrompt:'Return a JSON array with keys: title, company, location, platform, url, description, match_score, why_fit, posted'
     });
-    if(!jobs||!jobs.length){showErr('hunt-results','No listings found. Try different keywords.');return;}
-    document.getElementById('hunt-results').innerHTML=`<div style="font-size:12px;color:#374151;margin-bottom:10px;padding:8px 12px;background:#f0f9ff;border-radius:7px;border:1px solid #bae6fd">Found <strong>${jobs.length} listings</strong> for "${role}" in ${loc}</div>
-    ${jobs.map((j,i)=>{
+    if(!jobs||!jobs.length){
+      document.getElementById('hunt-meta').textContent=`No matching listings found for "${role}" in ${loc}. Try a broader keyword or another region.`;
+      document.getElementById('hunt-count').textContent='0 results';
+      showErr('hunt-results','No listings found. Try different keywords.');
+      return;
+    }
+    document.getElementById('hunt-meta').textContent=`Showing live roles for "${role}" in ${loc}. Refine the search on the left and the results will stay here.`;
+    document.getElementById('hunt-count').textContent=`${jobs.length} results`;
+    document.getElementById('hunt-results').innerHTML=jobs.map((j,i)=>{
       const sid='js'+Date.now()+i;
       const s=j.match_score||70;
       const sc=s>=75?'sc-hi':s>=55?'sc-mid':'sc-lo';
@@ -1016,8 +1132,12 @@ async function runHunt(){
           <a href="${applyUrl||'#'}" target="_blank" rel="noopener noreferrer" class="job-apply" ${applyUrl?'':'onclick="event.preventDefault();alert(\'This listing did not include a valid job URL. Please use the platform name to search manually.\')"'}>Apply / View</a>
           <button class="job-save" id="${sid}" onclick="saveJob(${JSON.stringify(j).replace(/"/g,'&quot;')},'${sid}')">+ Save to Tracker</button>
         </div>
-      </div>`;}).join('')}`;
-  }catch(e){showErr('hunt-results',e.message);console.error(e);}
+      </div>`;}).join('');
+  }catch(e){
+    document.getElementById('hunt-meta').textContent='The search could not be completed. Check the message below and try again.';
+    document.getElementById('hunt-count').textContent='Error';
+    showErr('hunt-results',e.message);console.error(e);
+  }
   btn.disabled=false;btn.textContent='🤖 Find live job listings';
 }
 function saveJob(j,sid){
@@ -1032,6 +1152,32 @@ function saveJob(j,sid){
 function loadCVForm(){
   ['name','title','loc','email','linkedin','web','summary','current','prev','langs'].forEach(f=>{const el=document.getElementById('cv-'+f);if(el)el.value=cvData[f]||'';});
   renderSkillTags();
+  syncProfilePreview();
+}
+function bindProfileInputs(){
+  ['cv-name','cv-title','cv-loc','cv-email','cv-linkedin','cv-web','cv-summary','cv-current','cv-prev','cv-langs'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el&&!el.dataset.boundPreview){
+      el.addEventListener('input',syncProfilePreview);
+      el.dataset.boundPreview='1';
+    }
+  });
+}
+function syncProfilePreview(){
+  const read=id=>document.getElementById(id)?.value?.trim()||'';
+  const name=read('cv-name')||cvData.name||'Malcolm Wu';
+  const title=read('cv-title')||cvData.title||'Strategic Manager';
+  const loc=read('cv-loc')||cvData.loc||'Banja Luka, Bosnia & Herzegovina';
+  const email=read('cv-email')||cvData.email||'';
+  const linkedin=read('cv-linkedin')||cvData.linkedin||'';
+  const web=read('cv-web')||cvData.web||'';
+  const summary=read('cv-summary')||cvData.summary||'Edit your CV once, then use this profile to generate platform-ready content, AI outreach drafts, and skill match reports.';
+  document.getElementById('profile-preview-name').textContent=name;
+  document.getElementById('profile-preview-title').textContent=title;
+  document.getElementById('profile-preview-loc').textContent=loc;
+  document.getElementById('profile-preview-email').textContent=email||'Add your email address';
+  document.getElementById('profile-preview-links').textContent=[linkedin,web].filter(Boolean).join(' · ')||'Add LinkedIn and website links';
+  document.getElementById('profile-preview-summary').textContent=summary;
 }
 function renderSkillTags(){
   document.getElementById('skills-tags').innerHTML=(cvData.skills||[]).map((s,i)=>`<span class="skill-remove" onclick="removeSkill(${i})">${s} <span style="opacity:.6;font-size:9px">✕</span></span>`).join('');
@@ -1046,6 +1192,7 @@ function removeSkill(i){if(cvData.skills)cvData.skills.splice(i,1);renderSkillTa
 function loadDefaultProfile(){cvData=JSON.parse(JSON.stringify(DEFAULT_CV));loadCVForm();}
 async function saveProfile(){
   cvData={...cvData,name:document.getElementById('cv-name').value,title:document.getElementById('cv-title').value,loc:document.getElementById('cv-loc').value,email:document.getElementById('cv-email').value,linkedin:document.getElementById('cv-linkedin').value,web:document.getElementById('cv-web').value,summary:document.getElementById('cv-summary').value,current:document.getElementById('cv-current').value,prev:document.getElementById('cv-prev').value,langs:document.getElementById('cv-langs').value};
+  syncProfilePreview();
   try{await storage.set('cv-data',JSON.stringify(cvData));showToast('Profile saved!');}catch{showToast('Save failed');}
 }
 function renderExportGrid(){
