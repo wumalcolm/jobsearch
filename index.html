@@ -536,6 +536,7 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
             </div>
             <div class="tags" id="skills-tags"></div>
             <div class="profile-actions" style="margin-top:14px">
+              <button onclick="applyWebsiteProfile()" style="padding:10px 14px;border:1.5px solid #d2e3fc;border-radius:14px;font-size:12px;cursor:pointer;background:#eef3fd;color:#174ea6;font-weight:700">↻ Use Website Profile</button>
               <button onclick="saveProfile()" style="padding:10px 16px;background:#0DB5B5;color:#fff;border:none;border-radius:14px;font-size:12px;font-weight:700;cursor:pointer">💾 Save Profile</button>
               <button onclick="loadDefaultProfile()" style="padding:10px 14px;border:1.5px solid #d1d5db;border-radius:14px;font-size:12px;cursor:pointer;background:#fff">↺ Reset</button>
             </div>
@@ -606,21 +607,22 @@ const SL={not_started:'Not started',contacted:'Contacted',replied:'Replied',meet
 const LL={local:'Bosnia local',erasmus:'Erasmus+',eor:'EOR / Remote EU',network:'Personal network'};
 const LC={local:'tag-green',erasmus:'tag-teal',eor:'tag-blue',network:'tag-purple'};
 
-const MALCOLM=`Malcolm Wu — Strategic Manager & Startup Ecosystem Builder relocating to Banja Luka, Bosnia & Herzegovina mid-2026.
-Skills: innovation hub management, startup ecosystem building, program design, SME digital adoption, multi-stakeholder partnerships, facilitation, community management, grant writing, event production.
-Experience: iCube Innovation (Strategic Manager, 2 hubs), Techstars Startup Weekend, Startup Grind Malaysia, Google Business Group Kuching, Taylor's University, Co-founder Roamly, Producer Borneo Beats Festival.
+const MALCOLM=`Malcolm Wu — Innovation & Community Program Manager, Strategic Manager, and Startup Ecosystem Builder relocating to Banja Luka, Bosnia & Herzegovina in July 2026.
+Skills: innovation ecosystem building, program design and delivery, community engagement, startup ecosystem development, stakeholder partnerships, facilitation, entrepreneurship support, SME digital adoption, event production, strategic planning.
+Experience: 10+ years building innovation ecosystems in Sarawak, Malaysia. Strategic Manager & Program Curator across the Sarikei Innovation Center and Betong Digital Innovation Hub since 2015, with 241 programs delivered and 7,165 participants. Built Sarawak's startup ecosystem from zero through Techstars Startup Weekend, Google Business Group, and Startup Grind. Also led OCR community work and Capoeira cultural programming.
 Languages: English (fluent), Bahasa Malaysia (fluent), Mandarin (fluent), Bosnian/Serbian (learning).
-Target roles: Program Manager, Project Coordinator, Ecosystem Builder, Community Manager, Trainer, Innovation Facilitator, Partnerships Manager.`;
+Target roles: Innovation & Community Program Manager, Program Manager, Ecosystem Builder, Strategic Partnerships Manager, Community Manager, Innovation Facilitator, Project Coordinator.`;
 
 const DEFAULT_CV={
-  name:'Malcolm Wu',title:'Strategic Manager | Startup Ecosystem Builder | Innovation Program Designer',
-  loc:'Banja Luka, Bosnia & Herzegovina (relocating mid-2026)',email:'',linkedin:'',web:'',
-  summary:'Experienced ecosystem builder with 8+ years managing innovation hubs, startup programs, and multi-stakeholder partnerships across Southeast Asia. Relocating to Bosnia & Herzegovina mid-2026. Seeking roles in NGOs, EU-funded programs, innovation hubs, or remote EU positions.',
-  current:'Strategic Manager, iCube Innovation, Sarawak Malaysia — Manages BDIH and SIC hubs. Designs startup programs, builds public-private-government partnerships, oversees SME digital adoption programs.',
-  prev:'Techstars Startup Weekend facilitator · Startup Grind Malaysia chapter leader · Google Business Group Kuching organizer · Taylor\'s University program design · Co-founder Roamly · Producer Borneo Beats Festival',
+  name:'Malcolm Wu',title:'Innovation & Community Program Manager | Strategic Manager | Startup Ecosystem Builder',
+  loc:'Banja Luka, Bosnia & Herzegovina (relocating July 2026)',email:'wu.malcolm@gmail.com',linkedin:'https://www.linkedin.com/in/wumalcolm/',web:'https://malcolmwu.com/',
+  summary:'Program builder and community person with 10+ years building innovation ecosystems in Sarawak, Malaysia. Relocating to Banja Luka, Bosnia & Herzegovina in July 2026 and open to roles across the Balkans and beyond. Experience includes leading entrepreneurship and innovation programming across two government-contracted Digital Innovation Hubs, delivering 241 programs for 7,165 participants, and building startup and community platforms from the ground up.',
+  current:'Strategic Manager & Program Curator, iCube Innovation, Sarawak Malaysia — Leading program design, delivery, and community engagement across the Sarikei Innovation Center and Betong Digital Innovation Hub since 2015. Delivered 241 programs for 7,165 participants across entrepreneurship, innovation, SME support, and digital adoption initiatives.',
+  prev:'Built Sarawak\'s startup ecosystem from zero through Techstars Startup Weekend, Google Business Group, and Startup Grind · Appointed GBG Chapter Lead by Google APAC · Launched Startup Grind Sarawak · Global Certified Startup Weekend Facilitator across 25+ events in 6 cities · Official Spartan Brand Ambassador Malaysia 2023–2025 · East Malaysia\'s active Capoeira instructor since 2012 and founder of an annual international festival drawing practitioners from 20+ countries',
   langs:'English (fluent), Bahasa Malaysia (fluent), Mandarin (fluent), Bosnian/Serbian (learning)',
-  skills:['Ecosystem Building','Innovation Hub Management','Program Design','Stakeholder Management','Grant Writing','Workshop Facilitation','Community Management','SME Development','Event Production','Startup Programs','Public-Private Partnerships','Strategic Planning']
+  skills:['Innovation Ecosystem Building','Program Design','Program Delivery','Community Engagement','Innovation Hub Management','Stakeholder Partnerships','Workshop Facilitation','SME Development','Digital Adoption','Entrepreneurship Support','Event Production','Strategic Planning']
 };
+const WEBSITE_PROFILE_SYNC_VERSION='website-profile-20260414';
 
 function buildWriterProfile(){
   const cv=cvData||DEFAULT_CV;
@@ -837,6 +839,15 @@ async function load(){
   try{const h=await storage.get('match-hist-v3');if(h&&h.value)matchHistory=JSON.parse(h.value);}catch{}
   try{const mc=await storage.get('match-collapsed');if(mc&&mc.value)matchCollapsed=JSON.parse(mc.value);}catch{}
   try{const c=await storage.get('cv-data');if(c&&c.value)cvData={...DEFAULT_CV,...JSON.parse(c.value)};}catch{}
+  let profileVersion='';
+  try{const pv=await storage.get('cv-profile-sync-version');if(pv&&pv.value)profileVersion=pv.value;}catch{}
+  const synced=syncCvDataFromWebsiteProfile(profileVersion!==WEBSITE_PROFILE_SYNC_VERSION);
+  if(synced){
+    try{
+      await storage.set('cv-data',JSON.stringify(cvData));
+      await storage.set('cv-profile-sync-version',WEBSITE_PROFILE_SYNC_VERSION);
+    }catch{}
+  }
   try{const p=await storage.get('plat-status');if(p&&p.value)platformStatus=JSON.parse(p.value);}catch{}
   try{const k=await storage.get('gemini-api-key');if(k&&k.value)geminiApiKey=k.value;}catch{}
   render();renderPlatforms();loadCVForm();bindProfileInputs();renderMatchHist();
@@ -1396,6 +1407,23 @@ function syncProfilePreview(){
 function renderSkillTags(){
   document.getElementById('skills-tags').innerHTML=(cvData.skills||[]).map((s,i)=>`<span class="skill-remove" onclick="removeSkill(${i})">${s} <span style="opacity:.6;font-size:9px">✕</span></span>`).join('');
 }
+function syncCvDataFromWebsiteProfile(force=false){
+  let changed=false;
+  const patch=(key,condition)=>{
+    if(force||condition(cvData[key])){cvData[key]=Array.isArray(DEFAULT_CV[key])?[...DEFAULT_CV[key]]:DEFAULT_CV[key];changed=true;}
+  };
+  patch('title',v=>!v||/Strategic Manager \| Startup Ecosystem Builder \| Innovation Program Designer/i.test(v));
+  patch('loc',v=>!v||/mid-2026/i.test(v));
+  patch('email',v=>!v);
+  patch('linkedin',v=>!v);
+  patch('web',v=>!v||/^malcolmwu\.com\/?$/i.test(v));
+  patch('summary',v=>!v||/8\+\s*years|mid-2026/i.test(v));
+  patch('current',v=>!v||/Manages BDIH and SIC hubs/i.test(v));
+  patch('prev',v=>!v||/Taylor's University program design|Co-founder Roamly|Producer Borneo Beats Festival/i.test(v));
+  patch('langs',v=>!v);
+  patch('skills',v=>!Array.isArray(v)||!v.length||v.includes('Ecosystem Building'));
+  return changed;
+}
 function addSkill(e){
   if(e.key!=='Enter'&&e.key!==',')return;
   const inp=document.getElementById('skill-in');const v=inp.value.replace(/,$/,'').trim();
@@ -1404,6 +1432,17 @@ function addSkill(e){
 }
 function removeSkill(i){if(cvData.skills)cvData.skills.splice(i,1);renderSkillTags();}
 function loadDefaultProfile(){cvData=JSON.parse(JSON.stringify(DEFAULT_CV));loadCVForm();}
+async function applyWebsiteProfile(){
+  cvData=JSON.parse(JSON.stringify(DEFAULT_CV));
+  loadCVForm();
+  try{
+    await storage.set('cv-data',JSON.stringify(cvData));
+    await storage.set('cv-profile-sync-version',WEBSITE_PROFILE_SYNC_VERSION);
+    showToast('Website profile applied');
+  }catch{
+    showToast('Could not apply website profile');
+  }
+}
 async function saveProfile(){
   cvData={...cvData,name:document.getElementById('cv-name').value,title:document.getElementById('cv-title').value,loc:document.getElementById('cv-loc').value,email:document.getElementById('cv-email').value,linkedin:document.getElementById('cv-linkedin').value,web:document.getElementById('cv-web').value,summary:document.getElementById('cv-summary').value,current:document.getElementById('cv-current').value,prev:document.getElementById('cv-prev').value,langs:document.getElementById('cv-langs').value};
   syncProfilePreview();
