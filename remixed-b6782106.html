@@ -154,7 +154,10 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 @media(max-width:1180px){.jobs-layout{grid-template-columns:1fr}.jobs-side{position:static}.platform-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 @media(max-width:760px){.platform-grid{grid-template-columns:1fr}.platform-btns{flex-direction:column}}
 /* SKILL MATCH */
-.match-result{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:14px}
+.match-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+@media(max-width:1180px){.match-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:760px){.match-grid{grid-template-columns:1fr;}}
+.match-result{background:#fff;border-radius:18px;border:1px solid #e5e7eb;overflow:hidden;box-shadow:var(--shadow);min-width:0}
 .match-head{padding:15px 17px 12px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .match-head.is-collapsed{border-bottom:none;padding-bottom:15px}
 .match-org-name{font-size:15px;font-weight:700;margin-bottom:2px}
@@ -173,6 +176,7 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .score-num{font-size:19px;line-height:1}.score-pct{font-size:9px;font-weight:600}
 .match-level{font-size:10px;font-weight:700;text-align:center;margin-top:3px;text-transform:uppercase}
 .match-body{padding:13px 17px}
+.match-summary{margin-top:10px;padding:10px 12px;border-radius:12px;background:#f8fafc;border:1px solid #e5e7eb;font-size:12px;color:#374151;line-height:1.55}
 .ms{margin-bottom:13px}
 .ms-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
 .ms-box{font-size:12px;color:#374151;line-height:1.6;padding:9px 11px;background:#f8fafc;border-radius:7px}
@@ -1083,7 +1087,7 @@ function renderMatchHist(){
       <span class="match-hint">Sorted by highest match. Use expand/collapse on each card.</span>
     </div>
     <div class="chips">${sorted.map((h)=>`<span class="chip" onclick="openMatchByName('${String(h.company_name).replace(/'/g,"\\'")}')">${h.company_name} <span style="opacity:.6">${h.score}/100</span></span>`).join('')}</div>
-    <div>${sorted.map(h=>renderMatchCard(h.result||h, h.input||'', !!matchCollapsed[h.company_name])).join('')}</div>
+    <div class="match-grid">${sorted.map(h=>renderMatchCard(h.result||h, h.input||'', !!matchCollapsed[h.company_name])).join('')}</div>
   </div>`;
 }
 function slugify(text){
@@ -1104,6 +1108,17 @@ function toggleMatchCard(name){
   try{storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
   renderMatchHist();
 }
+function removeMatch(name){
+  const found=matchHistory.find(x=>x.company_name===name);
+  if(!found)return;
+  if(!confirm(`Remove "${name}" from saved skill match results?`))return;
+  matchHistory=matchHistory.filter(x=>x.company_name!==name);
+  delete matchCollapsed[name];
+  if(curMatch&&curMatch.company_name===name)curMatch=null;
+  try{storage.set('match-hist-v3',JSON.stringify(matchHistory));}catch{}
+  try{storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
+  renderMatchHist();
+}
 function getMatchByName(name){
   const h=matchHistory.find(x=>x.company_name===name);
   return h&&h.result?h.result:null;
@@ -1114,6 +1129,8 @@ function renderMatchCard(r,input='',collapsed=false){
   const lc=s>=75?'#10b981':s>=50?'#f59e0b':'#ef4444';
   const already=orgs.some(o=>o.name===r.company_name);
   const slug=slugify(r.company_name);
+  const companyName=String(r.company_name).replace(/'/g,"\\'");
+  const summary=(r.approach_strategy||r.company_overview||'').slice(0,210);
   return `
     <div class="match-result" id="match-card-${slug}">
       <div class="match-head ${collapsed?'is-collapsed':''}">
@@ -1122,11 +1139,13 @@ function renderMatchCard(r,input='',collapsed=false){
           <div class="match-org-meta">${r.location||''} · ${r.company_type||''}</div>
           ${input?`<div style="font-size:11px;color:#6b7280;margin-top:8px">Source: ${input}</div>`:''}
           <div class="match-top-actions">
-            <button id="m-add-${slug}" onclick="addMatchToTracker('${String(r.company_name).replace(/'/g,"\\'")}')" ${already?'disabled':''} style="padding:8px 16px;background:${already?'#d1fae5':'#0DB5B5'};color:${already?'#065f46':'#fff'};border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">${already?'✓ Already in Tracker':'➕ Add to Tracker'}</button>
-            <button onclick="openAIFromMatch('${String(r.company_name).replace(/'/g,"\\'")}')" style="padding:8px 14px;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#5b21b6;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">✉ Draft outreach</button>
+            <button id="m-add-${slug}" onclick="addMatchToTracker('${companyName}')" ${already?'disabled':''} style="padding:8px 16px;background:${already?'#d1fae5':'#0DB5B5'};color:${already?'#065f46':'#fff'};border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">${already?'✓ Already in Tracker':'➕ Add to Tracker'}</button>
+            <button onclick="openAIFromMatch('${companyName}')" style="padding:8px 14px;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#5b21b6;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">✉ Draft outreach</button>
             ${r.website?`<a href="https://${r.website.replace(/^https?:\/\//,'')}" target="_blank" style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:600;color:#374151;text-decoration:none;background:#fff">🌐 Visit website</a>`:''}
-            <button class="match-collapse" onclick="toggleMatchCard('${String(r.company_name).replace(/'/g,"\\'")}')">${collapsed?'Expand result':'Collapse result'}</button>
+            <button class="match-collapse" onclick="toggleMatchCard('${companyName}')">${collapsed?'Expand result':'Collapse result'}</button>
+            <button class="match-collapse" onclick="removeMatch('${companyName}')" style="border-color:#fecaca;color:#b91c1c;background:#fff7f7">Remove</button>
           </div>
+          ${collapsed&&summary?`<div class="match-summary">${summary}${summary.length>=210?'…':''}</div>`:''}
         </div>
         <div class="score-ring">
           <div class="score-circle ${sc}"><span class="score-num">${s}</span><span class="score-pct">/100</span></div>
