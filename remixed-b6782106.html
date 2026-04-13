@@ -177,8 +177,16 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .ai-sub{font-size:11px;color:#6b7280;margin-top:2px}
 .mclose{width:26px;height:26px;border:none;background:#f3f4f6;border-radius:50%;cursor:pointer;font-size:14px}
 .ai-body{padding:13px 17px;flex:1;overflow-y:auto}
-.ai-out{font-size:13px;line-height:1.7;color:#1f2937;white-space:pre-wrap;word-break:break-word}
+.ai-out{width:100%;min-height:300px;border:1px solid #e5e7eb;border-radius:10px;padding:12px 13px;font-size:13px;line-height:1.7;color:#1f2937;resize:vertical;font-family:inherit;background:#fff}
+.ai-out:focus{outline:none;border-color:#0DB5B5}
 .ai-out.loading{color:#9ca3af;font-style:italic}
+.ai-rewrite{margin-top:10px;padding:11px 12px;background:#f8fafc;border:1px solid #e5e7eb;border-radius:10px}
+.ai-rewrite-label{display:block;font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px}
+.ai-rewrite-row{display:flex;gap:8px;align-items:flex-start}
+.ai-rewrite-row textarea{flex:1;min-height:62px;padding:9px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:12px;line-height:1.5;font-family:inherit;resize:vertical}
+.ai-rewrite-row textarea:focus{outline:none;border-color:#0DB5B5}
+.ai-helper{font-size:11px;color:#6b7280;margin-top:6px;line-height:1.5}
+.btn-rewrite{padding:8px 13px;border:none;border-radius:8px;background:#0DB5B5;color:#fff;cursor:pointer;font-size:12px;font-weight:700;white-space:nowrap}
 .ai-foot{padding:10px 17px;border-top:1px solid #e5e7eb;display:flex;gap:7px;justify-content:flex-end}
 .btn-copy{padding:6px 13px;border:1.5px solid #d1d5db;border-radius:7px;background:#fff;cursor:pointer;font-size:12px;font-weight:600}
 .btn-copy.copied{background:#d1fae5;border-color:#6ee7b7;color:#065f46}
@@ -379,7 +387,15 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
         <button class="type-tab active" id="tab-email" onclick="switchTab('email')">✉ Email</button>
         <button class="type-tab" id="tab-cover" onclick="switchTab('cover')">📄 Cover Letter</button>
       </div>
-      <div class="ai-out loading" id="ai-out">Generating…</div>
+      <textarea class="ai-out loading" id="ai-out" placeholder="Gemini will draft here..."></textarea>
+      <div class="ai-rewrite">
+        <span class="ai-rewrite-label">Gemini Writer</span>
+        <div class="ai-rewrite-row">
+          <textarea id="ai-instructions" placeholder="Example: Make this sound more like me. More direct, less corporate, more human, shorter sentences, and less salesy."></textarea>
+          <button class="btn-rewrite" id="rewrite-btn" onclick="rewriteDraft()">Rewrite</button>
+        </div>
+        <div class="ai-helper">Edit the draft above, then tell Gemini what to change. It will rewrite from your edited version, not from scratch.</div>
+      </div>
     </div>
     <div class="ai-foot">
       <button class="btn-copy" id="copy-btn" onclick="copyAI()">Copy</button>
@@ -439,7 +455,7 @@ const PLATFORM_PROMPTS={
 // STATE
 // ─────────────────────────────────────────────────
 let orgs=[], currentFilter='all', addedIds=new Set();
-let aiState={orgId:null,type:'email',eText:'',cText:''};
+let aiState={orgId:null,type:'email',eText:'',cText:'',instructions:''};
 let matchHistory=[], curMatch=null, selChipQ='';
 let cvData=JSON.parse(JSON.stringify(DEFAULT_CV)), platformStatus={}, geminiApiKey='';
 const exportCache={};
@@ -914,11 +930,12 @@ function copyExport(pid){
 // AI DRAFTING
 // ─────────────────────────────────────────────────
 function openAI(orgId,type){
-  aiState={orgId,type,eText:'',cText:''};
+  aiState={orgId,type,eText:'',cText:'',instructions:''};
   const org=orgs.find(o=>o.id===orgId);
   document.getElementById('ai-title').textContent=type==='email'?'Drafting outreach email…':'Drafting cover letter…';
   document.getElementById('ai-org').textContent=org?org.name:'';
-  document.getElementById('ai-out').textContent='Generating…';document.getElementById('ai-out').className='ai-out loading';
+  document.getElementById('ai-out').value='Generating…';document.getElementById('ai-out').className='ai-out loading';
+  document.getElementById('ai-instructions').value='';
   document.getElementById('copy-btn').textContent='Copy';document.getElementById('copy-btn').className='btn-copy';
   document.getElementById('tab-email').classList.toggle('active',type==='email');
   document.getElementById('tab-cover').classList.toggle('active',type==='cover');
@@ -926,17 +943,34 @@ function openAI(orgId,type){
   genDraft(org,type);
 }
 function closeAI(){document.getElementById('ai-modal').classList.remove('open');}
+function syncDraftToState(){
+  const out=document.getElementById('ai-out');
+  const inst=document.getElementById('ai-instructions');
+  if(!out||!inst)return;
+  if(aiState.type==='email')aiState.eText=out.value;else aiState.cText=out.value;
+  aiState.instructions=inst.value;
+}
 function switchTab(type){
+  syncDraftToState();
   aiState.type=type;
   document.getElementById('tab-email').classList.toggle('active',type==='email');
   document.getElementById('tab-cover').classList.toggle('active',type==='cover');
   document.getElementById('copy-btn').textContent='Copy';document.getElementById('copy-btn').className='btn-copy';
-  const org=orgs.find(o=>o.id===aiState.orgId);
   const cached=type==='email'?aiState.eText:aiState.cText;
-  if(cached){document.getElementById('ai-out').textContent=cached;document.getElementById('ai-out').className='ai-out';document.getElementById('ai-title').textContent=type==='email'?'Outreach Email':'Cover Letter';}
-  else{document.getElementById('ai-out').textContent='Generating…';document.getElementById('ai-out').className='ai-out loading';genDraft(org,type);}
+  document.getElementById('ai-instructions').value=aiState.instructions||'';
+  if(cached){document.getElementById('ai-out').value=cached;document.getElementById('ai-out').className='ai-out';document.getElementById('ai-title').textContent=type==='email'?'Outreach Email':'Cover Letter';}
+  else{
+    const org=orgs.find(o=>o.id===aiState.orgId);
+    document.getElementById('ai-out').value='Generating…';document.getElementById('ai-out').className='ai-out loading';genDraft(org,type);
+  }
 }
-function regen(){const org=orgs.find(o=>o.id===aiState.orgId);if(aiState.type==='email')aiState.eText='';else aiState.cText='';document.getElementById('ai-out').textContent='Regenerating…';document.getElementById('ai-out').className='ai-out loading';genDraft(org,aiState.type);}
+function regen(){
+  syncDraftToState();
+  const org=orgs.find(o=>o.id===aiState.orgId);
+  if(aiState.type==='email')aiState.eText='';else aiState.cText='';
+  document.getElementById('ai-out').value='Regenerating…';document.getElementById('ai-out').className='ai-out loading';
+  genDraft(org,aiState.type);
+}
 async function genDraft(org,type){
   const isE=type==='email';
   try{
@@ -946,13 +980,37 @@ async function genDraft(org,type){
         ?`Short outreach email from Malcolm to ${org.name} (${org.type}, ${org.location}).\nMalcolm: ${MALCOLM}\nNotes: ${org.notes||'None.'}\nFirst line = subject (no label). Under 200 words. If notes say referral only, write networking email. End: Malcolm Wu.`
         :`Cover letter from Malcolm Wu for ${org.name} (${org.type}, ${org.location}).\nMalcolm: ${MALCOLM}\nNotes: ${org.notes||'None.'}\n3-4 paragraphs, 300-380 words. Hook, experience, why this org, call to action. End: Warm regards, Malcolm Wu.`});
     if(isE)aiState.eText=res;else aiState.cText=res;
-    document.getElementById('ai-out').textContent=res||'No output.';
+    document.getElementById('ai-out').value=res||'No output.';
     document.getElementById('ai-out').className='ai-out';
     document.getElementById('ai-title').textContent=isE?'Outreach Email':'Cover Letter';
-  }catch(e){document.getElementById('ai-out').textContent='Error: '+e.message;document.getElementById('ai-out').className='ai-out';}
+  }catch(e){document.getElementById('ai-out').value='Error: '+e.message;document.getElementById('ai-out').className='ai-out';}
+}
+async function rewriteDraft(){
+  syncDraftToState();
+  const org=orgs.find(o=>o.id===aiState.orgId);
+  const isE=aiState.type==='email';
+  const draft=isE?aiState.eText:aiState.cText;
+  const instructions=(aiState.instructions||'').trim()||'Make this sound more like Malcolm: direct, human, specific, and natural.';
+  const btn=document.getElementById('rewrite-btn');
+  btn.disabled=true;btn.textContent='Rewriting…';
+  document.getElementById('ai-out').className='ai-out loading';
+  try{
+    const res=await callGemini({
+      maxTokens:1200,
+      system:'You are an editing partner. Rewrite the provided draft while preserving the writer\'s intent, facts, and voice notes. Output ONLY the revised draft.',
+      userMsg:`Rewrite this ${isE?'outreach email':'cover letter'} for Malcolm Wu.\nOrganization: ${org?.name||''} (${org?.type||''}, ${org?.location||''})\nMalcolm profile: ${MALCOLM}\nOrg notes: ${org?.notes||'None.'}\nStyle instructions: ${instructions}\n\nCurrent draft:\n${draft||''}`
+    });
+    if(isE)aiState.eText=res;else aiState.cText=res;
+    document.getElementById('ai-out').value=res||'No output.';
+    document.getElementById('ai-out').className='ai-out';
+  }catch(e){
+    document.getElementById('ai-out').className='ai-out';
+    showToast('Rewrite failed: '+e.message);
+  }
+  btn.disabled=false;btn.textContent='Rewrite';
 }
 function copyAI(){
-  navigator.clipboard.writeText(document.getElementById('ai-out').textContent).then(()=>{
+  navigator.clipboard.writeText(document.getElementById('ai-out').value).then(()=>{
     const b=document.getElementById('copy-btn');b.textContent='✓ Copied!';b.className='btn-copy copied';
     setTimeout(()=>{b.textContent='Copy';b.className='btn-copy';},2000);
   });
