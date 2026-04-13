@@ -910,6 +910,25 @@ function cyclePlat(id){
   platformStatus[id]=s[(s.indexOf(c)+1)%s.length];
   try{storage.set('plat-status',JSON.stringify(platformStatus));}catch{}renderPlatforms();
 }
+function normalizeExternalUrl(url,platform=''){
+  const raw=String(url||'').trim();
+  if(!raw)return '';
+  if(/^https?:\/\//i.test(raw))return raw;
+  if(/^www\./i.test(raw))return 'https://'+raw;
+  if(/^[a-z0-9.-]+\.[a-z]{2,}(\/.*)?$/i.test(raw))return 'https://'+raw;
+  const p=String(platform||'').toLowerCase();
+  if(p.includes('linkedin'))return 'https://www.linkedin.com/jobs/';
+  if(p.includes('indeed'))return 'https://www.indeed.com/';
+  if(p.includes('reliefweb'))return 'https://reliefweb.int/jobs';
+  if(p.includes('devex'))return 'https://www.devex.com/jobs';
+  if(p.includes('eures'))return 'https://eures.europa.eu/';
+  if(p.includes('idealist'))return 'https://www.idealist.org/en/jobs';
+  if(p.includes('impactpool'))return 'https://www.impactpool.org/jobs';
+  if(p.includes('wellfound'))return 'https://wellfound.com/jobs';
+  if(p.includes('remote'))return 'https://remote.com/jobs';
+  if(p.includes('eurobrussels'))return 'https://www.eurobrussels.com/jobs.php';
+  return '';
+}
 function setHunt(v){document.getElementById('hunt-role').value=v;}
 async function runHunt(){
   const role=document.getElementById('hunt-role').value.trim();
@@ -929,13 +948,14 @@ async function runHunt(){
       const sid='js'+Date.now()+i;
       const s=j.match_score||70;
       const sc=s>=75?'sc-hi':s>=55?'sc-mid':'sc-lo';
+      const applyUrl=normalizeExternalUrl(j.url,j.platform);
       return `<div class="job-card">
         <div class="job-head"><div class="job-title">${j.title}</div><div class="job-score ${sc}">${s}%</div></div>
         <div class="job-meta"><span>🏢 ${j.company}</span><span>📍 ${j.location}</span><span>🌐 ${j.platform}</span>${j.posted?`<span>🕐 ${j.posted}</span>`:''}</div>
         <div class="job-desc">${j.description||''}</div>
         ${j.why_fit?`<div style="font-size:11px;padding:6px 9px;background:#f0f9ff;border-radius:6px;border-left:3px solid #0DB5B5;margin-bottom:9px;line-height:1.5">💡 ${j.why_fit}</div>`:''}
         <div class="job-footer">
-          <a href="${j.url||'#'}" target="_blank" class="job-apply">Apply / View</a>
+          <a href="${applyUrl||'#'}" target="_blank" rel="noopener noreferrer" class="job-apply" ${applyUrl?'':'onclick="event.preventDefault();alert(\'This listing did not include a valid job URL. Please use the platform name to search manually.\')"'}>Apply / View</a>
           <button class="job-save" id="${sid}" onclick="saveJob(${JSON.stringify(j).replace(/"/g,'&quot;')},'${sid}')">+ Save to Tracker</button>
         </div>
       </div>`;}).join('')}`;
@@ -943,7 +963,8 @@ async function runHunt(){
   btn.disabled=false;btn.textContent='🤖 Find live job listings';
 }
 function saveJob(j,sid){
-  orgs.push({id:'j'+Date.now(),name:j.company+' — '+j.title,location:j.location,type:j.platform,lane:'local',priority:2,contact:j.url||'',website:'',notes:`Role: ${j.title}\nPlatform: ${j.platform}\nMatch: ${j.match_score}%\n${j.why_fit||''}\nApply: ${j.url||''}`,status:'not_started',updatedAt:null});
+  const applyUrl=normalizeExternalUrl(j.url,j.platform);
+  orgs.push({id:'j'+Date.now(),name:j.company+' — '+j.title,location:j.location,type:j.platform,lane:'local',priority:2,contact:applyUrl||j.url||'',website:applyUrl||'',notes:`Role: ${j.title}\nPlatform: ${j.platform}\nMatch: ${j.match_score}%\n${j.why_fit||''}\nApply: ${applyUrl||j.url||''}`,status:'not_started',updatedAt:null});
   saveOrgs();const btn=document.getElementById(sid);if(btn){btn.textContent='✓ Saved';btn.className='job-save saved';btn.disabled=true;}
 }
 
