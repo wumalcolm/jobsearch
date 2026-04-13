@@ -1,0 +1,938 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Malcolm's Job Outreach Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f4f6f9;color:#0D1B2A;font-size:14px}
+.header{background:#0D1B2A;color:#fff;padding:14px 22px 0}
+.header-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.header h1{font-size:17px;font-weight:700;margin-bottom:2px}
+.header p{font-size:11px;opacity:.5}
+.nav-tabs{display:flex;overflow-x:auto}
+.nav-tab{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:rgba(255,255,255,.5);border-bottom:3px solid transparent;white-space:nowrap;transition:all .15s}
+.nav-tab.active{color:#fff;border-bottom-color:#0DB5B5}
+.info-banner{padding:8px 22px;font-size:12px;background:#eff6ff;border-bottom:1px solid #dbeafe;color:#1e40af}
+.view{display:none}.view.active{display:block}
+.page-pad{padding:18px 22px}
+.sec-head{margin-bottom:14px}.sec-head h2{font-size:15px;font-weight:700;margin-bottom:3px}.sec-head p{font-size:12px;color:#6b7280}
+.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px}
+.tag-green{background:#d1fae5;color:#065f46}.tag-blue{background:#dbeafe;color:#1e40af}
+.tag-teal{background:#ccfbf1;color:#0f766e}.tag-purple{background:#ede9fe;color:#4c1d95}
+.tag-gray{background:#f3f4f6;color:#374151}.tag-orange{background:#ffedd5;color:#9a3412}
+.big-btn{width:100%;padding:10px;background:#0D1B2A;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer}
+.big-btn:hover{opacity:.88}.big-btn:disabled{opacity:.5;cursor:not-allowed}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{display:inline-block;width:10px;height:10px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .6s linear infinite}
+.big-spin{width:30px;height:30px;border:3px solid #e5e7eb;border-top-color:#0DB5B5;border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 10px}
+.loading-box{text-align:center;padding:32px 0}.loading-box p{font-size:12px;color:#9ca3af;margin-top:6px}
+.empty-box{text-align:center;padding:36px;color:#9ca3af;font-size:13px}
+.input-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.input-row input,.input-row select{flex:1;min-width:130px;padding:8px 11px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit}
+.input-row input:focus,.input-row select:focus{outline:none;border-color:#0DB5B5}
+.white-box{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:16px;margin-bottom:14px}
+.box-label{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;display:block;margin-bottom:7px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.chip{padding:4px 11px;border:1.5px solid #d1d5db;border-radius:99px;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#374151;transition:all .15s}
+.chip:hover,.chip.on{background:#0D1B2A;border-color:#0D1B2A;color:#fff}
+/* TRACKER */
+.stats{display:flex;gap:9px;padding:13px 22px;background:#fff;border-bottom:1px solid #e5e7eb;flex-wrap:wrap}
+.stat{text-align:center;padding:7px 12px;border-radius:8px;min-width:60px}
+.stat .n{font-size:19px;font-weight:700;line-height:1}.stat .l{font-size:10px;margin-top:3px;font-weight:500;text-transform:uppercase}
+.s-total{background:#f0f4ff}.s-total .n{color:#1e40af}
+.s-p{background:#fef9ec}.s-p .n{color:#92400e}.s-c{background:#eff6ff}.s-c .n{color:#1d4ed8}
+.s-r{background:#ecfdf5}.s-r .n{color:#065f46}.s-m{background:#f5f3ff}.s-m .n{color:#4c1d95}
+.s-pr{background:#ecfdf5}.s-pr .n{color:#065f46}
+.controls{padding:10px 22px;display:flex;gap:7px;flex-wrap:wrap;background:#fff;border-bottom:1px solid #e5e7eb;align-items:center}
+.fbtn{padding:5px 11px;border:1px solid #d1d5db;border-radius:99px;background:#fff;cursor:pointer;font-size:12px;color:#374151}
+.fbtn.active{background:#0D1B2A;color:#fff;border-color:#0D1B2A}
+.add-btn{margin-left:auto;padding:6px 13px;background:#0DB5B5;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+.t-list{padding:14px 22px;display:flex;flex-direction:column;gap:9px}
+.tc{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden}
+.tc:hover{box-shadow:0 2px 8px rgba(0,0,0,.08)}
+.tc-top{padding:12px 15px 8px;display:flex;gap:10px;align-items:flex-start}
+.pri{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;margin-top:1px}
+.pri1{background:#fee2e2;color:#991b1b}.pri2{background:#fef3c7;color:#78350f}.pri3{background:#dbeafe;color:#1e3a8a}
+.tc-main{flex:1;min-width:0}
+.tc-name{font-size:14px;font-weight:600;margin-bottom:2px}.tc-meta{font-size:12px;color:#6b7280;margin-bottom:5px}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+.st-row{display:flex;align-items:center;gap:7px;flex-wrap:wrap}
+.sbtn{padding:3px 10px;border-radius:99px;border:1.5px solid;font-size:11px;font-weight:600;cursor:pointer}
+.st-not_started{background:#f9fafb;border-color:#d1d5db;color:#6b7280}
+.st-contacted{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+.st-replied{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}
+.st-meeting{background:#f5f3ff;border-color:#c4b5fd;color:#4c1d95}
+.st-progress{background:#ecfdf5;border-color:#6ee7b7;color:#047857}
+.st-not_pursuing{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+.upd{font-size:10px;color:#9ca3af}
+.tc-contact{padding:0 15px 8px 52px;font-size:11px;color:#6b7280;display:flex;gap:12px;flex-wrap:wrap}
+.tc-notes{padding:0 15px 8px 52px}
+.ni{width:100%;font-size:12px;color:#374151;border:1px solid #e5e7eb;border-radius:6px;padding:6px 8px;resize:none;font-family:inherit;min-height:32px;background:#f9fafb}
+.ni:focus{outline:none;border-color:#0DB5B5;background:#fff}
+.tc-actions{padding:0 15px 12px 52px;display:flex;gap:6px;flex-wrap:wrap}
+.ai-btn{padding:5px 11px;border-radius:7px;border:1.5px solid;font-size:11px;font-weight:600;cursor:pointer}
+.ai-btn:hover{opacity:.85}
+.ai-btn-email{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+.ai-btn-cover{background:#f5f3ff;border-color:#c4b5fd;color:#5b21b6}
+/* JOB BOARDS */
+.sub-nav{display:flex;border-bottom:2px solid #e5e7eb;margin-bottom:18px}
+.sub-tab{padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;border:none;background:transparent;color:#6b7280;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap}
+.sub-tab.active{color:#0D1B2A;border-bottom-color:#0DB5B5}
+.sub-section{display:none}.sub-section.active{display:block}
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:12px}
+.platform-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px 16px}
+.platform-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.platform-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.platform-name{font-size:13px;font-weight:700}.platform-type{font-size:11px;color:#6b7280}
+.platform-desc{font-size:12px;color:#374151;margin-bottom:10px;line-height:1.5}
+.platform-btns{display:flex;gap:7px}
+.p-search-btn{flex:1;padding:7px 10px;background:#0D1B2A;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;text-align:center;text-decoration:none;display:block}
+.p-profile-btn{flex:1;padding:7px 10px;background:#fff;color:#374151;border:1.5px solid #d1d5db;border-radius:7px;font-size:11px;font-weight:600;text-align:center;text-decoration:none;display:block}
+.p-status{display:flex;align-items:center;gap:5px;margin-bottom:8px}
+.p-dot{width:7px;height:7px;border-radius:50%}
+.job-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px 16px;margin-bottom:10px}
+.job-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:5px}
+.job-title{font-size:13px;font-weight:700}
+.job-score{flex-shrink:0;font-size:12px;font-weight:800;padding:3px 8px;border-radius:7px}
+.sc-hi{background:#ecfdf5;color:#065f46}.sc-mid{background:#fef9ec;color:#78350f}.sc-lo{background:#fee2e2;color:#991b1b}
+.job-meta{font-size:11px;color:#6b7280;margin-bottom:7px;display:flex;gap:10px;flex-wrap:wrap}
+.job-desc{font-size:12px;color:#374151;line-height:1.55;margin-bottom:9px}
+.job-footer{display:flex;gap:7px;flex-wrap:wrap}
+.job-apply{padding:5px 12px;background:#0DB5B5;color:#fff;border:none;border-radius:7px;font-size:11px;font-weight:700;text-decoration:none;display:inline-block}
+.job-save{padding:5px 12px;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#5b21b6;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer}
+.job-save.saved{background:#d1fae5;border-color:#6ee7b7;color:#065f46;cursor:default}
+/* SKILL MATCH */
+.match-result{background:#fff;border-radius:12px;border:1px solid #e5e7eb;overflow:hidden;margin-bottom:14px}
+.match-head{padding:15px 17px 12px;border-bottom:1px solid #f0f0f0;display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+.match-org-name{font-size:15px;font-weight:700;margin-bottom:2px}
+.match-org-meta{font-size:11px;color:#6b7280;margin-bottom:10px}
+.score-ring{text-align:center;flex-shrink:0}
+.score-circle{width:62px;height:62px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;border:3px solid}
+.sc-hi-ring{border-color:#10b981;background:#ecfdf5;color:#065f46}
+.sc-mid-ring{border-color:#f59e0b;background:#fef9ec;color:#78350f}
+.sc-lo-ring{border-color:#ef4444;background:#fef2f2;color:#991b1b}
+.score-num{font-size:19px;line-height:1}.score-pct{font-size:9px;font-weight:600}
+.match-level{font-size:10px;font-weight:700;text-align:center;margin-top:3px;text-transform:uppercase}
+.match-body{padding:13px 17px}
+.ms{margin-bottom:13px}
+.ms-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
+.ms-box{font-size:12px;color:#374151;line-height:1.6;padding:9px 11px;background:#f8fafc;border-radius:7px}
+.ms-box.yellow{background:#fef9ec;border-left:3px solid #f59e0b}
+.skill-tags{display:flex;flex-wrap:wrap;gap:5px}
+.sk{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
+.sk-y{background:#d1fae5;color:#065f46}.sk-n{background:#fee2e2;color:#991b1b}.sk-t{background:#fef3c7;color:#78350f}
+.role-list{display:flex;flex-wrap:wrap;gap:6px}
+.role-tag{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:#ede9fe;color:#4c1d95}
+.tp-list{list-style:none;display:flex;flex-direction:column;gap:5px}
+.tp-list li{font-size:12px;color:#374151;padding:6px 9px;background:#f0f9ff;border-radius:6px;border-left:3px solid #0DB5B5;line-height:1.5}
+/* DISCOVER */
+.rec-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:13px 15px}
+.rec-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:5px}
+.rec-name{font-size:13px;font-weight:700}
+.rec-add{flex-shrink:0;padding:5px 11px;background:#0DB5B5;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
+.rec-add.added{background:#d1fae5;color:#065f46;cursor:default}
+.rec-meta{font-size:11px;color:#6b7280;margin-bottom:6px}
+.rec-why{font-size:12px;color:#374151;line-height:1.5;margin-bottom:7px;padding:7px 9px;background:#f8fafc;border-radius:6px;border-left:3px solid #0DB5B5}
+/* PROFILE */
+.profile-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px}
+@media(max-width:600px){.profile-grid{grid-template-columns:1fr}}
+.pf{display:flex;flex-direction:column;gap:4px}
+.pf label{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.04em}
+.pf input,.pf textarea{padding:8px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:13px;font-family:inherit}
+.pf input:focus,.pf textarea:focus{outline:none;border-color:#0DB5B5}
+.pf textarea{resize:vertical;min-height:68px}
+.fw{grid-column:1/-1}
+.skill-remove{display:flex;align-items:center;gap:4px;padding:3px 9px;border-radius:99px;font-size:11px;font-weight:600;background:#dbeafe;color:#1e40af;cursor:pointer}
+.export-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.export-card{background:#fff;border-radius:12px;border:1px solid #e5e7eb;padding:14px}
+.export-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.exp-pname{display:flex;align-items:center;gap:8px;font-size:13px;font-weight:700}
+.exp-gen{padding:5px 11px;background:#0D1B2A;color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer}
+.exp-content{background:#f8fafc;border-radius:7px;border:1px solid #e5e7eb;padding:10px;min-height:80px;margin-bottom:8px;font-size:12px;color:#374151;line-height:1.55;white-space:pre-wrap;word-break:break-word}
+.exp-content.ph{color:#9ca3af;font-style:italic}
+.exp-actions{display:flex;gap:7px}
+.exp-copy{flex:1;padding:6px 10px;border:1.5px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:11px;font-weight:600;color:#374151}
+.exp-copy.copied{background:#d1fae5;border-color:#6ee7b7;color:#065f46}
+.exp-go{padding:6px 10px;border:none;border-radius:6px;background:#f0f4ff;color:#1d4ed8;font-size:11px;font-weight:600;text-decoration:none;display:inline-block}
+/* MODALS */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:300;align-items:center;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:18px;width:90%;max-width:420px;max-height:90vh;overflow-y:auto}
+.modal-box h3{font-size:14px;font-weight:700;margin-bottom:13px}
+.mf{margin-bottom:9px}
+.mf label{display:block;font-size:11px;font-weight:600;color:#6b7280;margin-bottom:3px;text-transform:uppercase}
+.mf input,.mf select,.mf textarea{width:100%;padding:7px 10px;border:1px solid #d1d5db;border-radius:6px;font-size:13px;font-family:inherit}
+.mf textarea{resize:vertical;min-height:55px}
+.modal-btns{display:flex;gap:8px;margin-top:13px;justify-content:flex-end}
+.btn-cancel{padding:7px 13px;border:1px solid #d1d5db;border-radius:6px;background:#fff;cursor:pointer;font-size:12px}
+.btn-ok{padding:7px 13px;border:none;border-radius:6px;background:#0DB5B5;color:#fff;cursor:pointer;font-size:12px;font-weight:600}
+.ai-modal-box{background:#fff;border-radius:14px;width:92%;max-width:620px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.ai-modal-head{padding:13px 17px 10px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between}
+.ai-modal-head h3{font-size:14px;font-weight:700}
+.ai-sub{font-size:11px;color:#6b7280;margin-top:2px}
+.mclose{width:26px;height:26px;border:none;background:#f3f4f6;border-radius:50%;cursor:pointer;font-size:14px}
+.ai-body{padding:13px 17px;flex:1;overflow-y:auto}
+.ai-out{font-size:13px;line-height:1.7;color:#1f2937;white-space:pre-wrap;word-break:break-word}
+.ai-out.loading{color:#9ca3af;font-style:italic}
+.ai-foot{padding:10px 17px;border-top:1px solid #e5e7eb;display:flex;gap:7px;justify-content:flex-end}
+.btn-copy{padding:6px 13px;border:1.5px solid #d1d5db;border-radius:7px;background:#fff;cursor:pointer;font-size:12px;font-weight:600}
+.btn-copy.copied{background:#d1fae5;border-color:#6ee7b7;color:#065f46}
+.btn-regen{padding:6px 13px;border:none;border-radius:7px;background:#0D1B2A;color:#fff;cursor:pointer;font-size:12px;font-weight:600}
+.type-tabs{display:flex;gap:6px;margin-bottom:12px}
+.type-tab{padding:4px 11px;border-radius:7px;border:1.5px solid #d1d5db;font-size:11px;font-weight:600;cursor:pointer;background:#fff;color:#374151}
+.type-tab.active{background:#0D1B2A;border-color:#0D1B2A;color:#fff}
+.err-box{padding:13px;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;color:#991b1b;font-size:12px;line-height:1.6}
+.toast{position:fixed;bottom:16px;right:16px;background:#0D1B2A;color:#fff;padding:7px 13px;border-radius:7px;font-size:11px;opacity:0;transition:opacity .3s;pointer-events:none;z-index:999}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-top">
+    <div><h1>Malcolm's Job Outreach Tracker</h1><p>Tracker · Discover · Skill Match · Job Boards · My Profile</p></div>
+  </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" onclick="showView('tracker')">📋 Tracker</button>
+    <button class="nav-tab" onclick="showView('discover')">🔍 Discover</button>
+    <button class="nav-tab" onclick="showView('match')">🎯 Skill Match</button>
+    <button class="nav-tab" onclick="showView('jobs')">💼 Job Boards</button>
+    <button class="nav-tab" onclick="showView('profile')">📄 My Profile</button>
+  </div>
+</div>
+<div class="info-banner">🤖 Powered by <strong>Gemini</strong> — save your Gemini API key in My Profile to enable AI features</div>
+
+<!-- TRACKER -->
+<div id="tracker-view" class="view active">
+  <div class="stats" id="stats"></div>
+  <div class="controls">
+    <button class="fbtn active" onclick="setFilter('all',event)">All</button>
+    <button class="fbtn" onclick="setFilter('not_started',event)">Not started</button>
+    <button class="fbtn" onclick="setFilter('contacted',event)">Contacted</button>
+    <button class="fbtn" onclick="setFilter('replied',event)">Replied</button>
+    <button class="fbtn" onclick="setFilter('meeting',event)">Meeting set</button>
+    <button class="fbtn" onclick="setFilter('progress',event)">In progress</button>
+    <button class="fbtn" onclick="setFilter('not_pursuing',event)">Not pursuing</button>
+    <button class="add-btn" onclick="openAdd()">+ Add org</button>
+  </div>
+  <div class="t-list" id="list"></div>
+</div>
+
+<!-- DISCOVER -->
+<div id="discover-view" class="view">
+  <div class="page-pad">
+    <div class="sec-head"><h2>🔍 Discover Opportunities</h2><p>Gemini searches for organizations matching your background in real-time</p></div>
+    <div class="white-box">
+      <span class="box-label">Quick searches</span>
+      <div class="chips">
+        <span class="chip" onclick="selChip(this,'Innovation hubs startup ecosystems Bosnia Herzegovina hiring program managers')">🏢 BH Hubs</span>
+        <span class="chip" onclick="selChip(this,'Erasmus+ organizations Bosnia Herzegovina hiring project coordinators facilitators 2025')">🇪🇺 Erasmus+ BiH</span>
+        <span class="chip" onclick="selChip(this,'NGOs Bosnia Herzegovina entrepreneurship youth development hiring trainers')">🌱 BiH NGOs</span>
+        <span class="chip" onclick="selChip(this,'European companies hiring remote ecosystem managers community builders EOR')">🌍 EU Remote</span>
+        <span class="chip" onclick="selChip(this,'GIZ UNDP EU Bosnia project coordinator jobs 2025')">💼 Dev Agencies</span>
+        <span class="chip" onclick="selChip(this,'universities research institutions Bosnia hiring innovation program managers')">🎓 Universities</span>
+      </div>
+      <span class="box-label">Custom search</span>
+      <div class="input-row"><input id="disc-q" placeholder="e.g. Tech accelerators in Sarajevo hiring..."></div>
+      <div class="input-row">
+        <select id="disc-region"><option value="Bosnia Herzegovina and Balkans">Bosnia & Balkans</option><option value="Banja Luka">Banja Luka only</option><option value="Sarajevo">Sarajevo</option><option value="European Union">EU-wide (remote)</option><option value="Germany Austria Switzerland">DACH</option><option value="Netherlands Belgium">Benelux</option><option value="Europe">All Europe</option></select>
+        <select id="disc-type"><option value="any type">Any type</option><option value="Innovation Hubs">Innovation Hubs</option><option value="NGOs">NGOs</option><option value="Erasmus+ EU-funded">Erasmus+ / EU</option><option value="Development Agencies">Dev Agencies</option><option value="Universities">Universities</option><option value="Startups">Startups</option></select>
+      </div>
+      <button class="big-btn" id="disc-btn" onclick="runDiscover()">🔍 Search for opportunities</button>
+    </div>
+    <div id="disc-results"></div>
+  </div>
+</div>
+
+<!-- SKILL MATCH -->
+<div id="match-view" class="view">
+  <div class="page-pad">
+    <div class="sec-head"><h2>🎯 Skill Match Analyzer</h2><p>Enter any company name or website URL — get a full CV match report</p></div>
+    <div class="white-box">
+      <span class="box-label">Company name or URL</span>
+      <div class="input-row">
+        <input id="match-in" placeholder="e.g. BRAVO BiH  or  bravo-bih.com  or  https://icbl.ba" onkeydown="if(event.key==='Enter')runMatch()">
+        <button class="big-btn" id="match-btn" style="width:auto;padding:8px 18px" onclick="runMatch()">Analyze</button>
+      </div>
+      <div class="chips" style="margin-top:8px;margin-bottom:0">
+        <span class="chip" onclick="setMI('Impact Hub Sarajevo')">Impact Hub Sarajevo</span>
+        <span class="chip" onclick="setMI('Mozaik Foundation BiH')">Mozaik Foundation</span>
+        <span class="chip" onclick="setMI('USAID Bosnia')">USAID Bosnia</span>
+        <span class="chip" onclick="setMI('Remote.com')">Remote.com</span>
+        <span class="chip" onclick="setMI('Teach For All')">Teach For All</span>
+        <span class="chip" onclick="setMI('onex.digital')">DIH ONEX</span>
+      </div>
+    </div>
+    <div id="match-hist"></div>
+    <div id="match-result"></div>
+  </div>
+</div>
+
+<!-- JOB BOARDS -->
+<div id="jobs-view" class="view">
+  <div class="page-pad">
+    <div class="sec-head"><h2>💼 Job Boards</h2><p>Pre-configured search links and AI-powered job hunt</p></div>
+    <div class="sub-nav">
+      <button class="sub-tab active" onclick="showSub('platforms')">🌐 Platforms</button>
+      <button class="sub-tab" onclick="showSub('ai-hunt')">🤖 AI Job Hunt</button>
+    </div>
+    <div id="platforms-sub" class="sub-section active"><div class="platform-grid" id="platform-grid"></div></div>
+    <div id="ai-hunt-sub" class="sub-section">
+      <div class="white-box">
+        <span class="box-label">Search for live job listings</span>
+        <div class="input-row">
+          <input id="hunt-role" value="program manager ecosystem innovation NGO" placeholder="Role keywords">
+          <select id="hunt-loc"><option value="Bosnia Herzegovina">Bosnia & Herzegovina</option><option value="Banja Luka">Banja Luka</option><option value="Sarajevo">Sarajevo</option><option value="remote Europe">Remote Europe</option><option value="Germany">Germany</option><option value="Netherlands">Netherlands</option><option value="worldwide">Worldwide</option></select>
+        </div>
+        <div class="chips">
+          <span class="chip" onclick="setHunt('Erasmus+ project coordinator Bosnia')">Erasmus+ Coordinator</span>
+          <span class="chip" onclick="setHunt('innovation hub manager Bosnia Herzegovina')">Hub Manager</span>
+          <span class="chip" onclick="setHunt('NGO program officer Bosnia')">NGO Program Officer</span>
+          <span class="chip" onclick="setHunt('community manager remote Europe startup')">Remote Community Mgr</span>
+          <span class="chip" onclick="setHunt('GIZ consultant trainer Bosnia')">GIZ Trainer</span>
+        </div>
+        <button class="big-btn" id="hunt-btn" onclick="runHunt()">🤖 Find live job listings</button>
+      </div>
+      <div id="hunt-results"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MY PROFILE -->
+<div id="profile-view" class="view">
+  <div class="page-pad">
+    <div class="sec-head"><h2>📄 My Profile Kit</h2><p>Edit once, generate platform-ready content for any job board</p></div>
+    <div class="sub-nav">
+      <button class="sub-tab active" onclick="showProfileSub('cv-editor')">✏️ Edit My CV</button>
+      <button class="sub-tab" onclick="showProfileSub('platform-export')">🚀 Export to Platforms</button>
+    </div>
+    <div id="cv-editor-sub" class="sub-section active">
+      <div class="white-box">
+        <div class="profile-grid">
+          <div class="pf"><label>Full Name</label><input id="cv-name"></div>
+          <div class="pf"><label>Current Title</label><input id="cv-title"></div>
+          <div class="pf"><label>Location</label><input id="cv-loc"></div>
+          <div class="pf"><label>Email</label><input id="cv-email" type="email"></div>
+          <div class="pf"><label>LinkedIn URL</label><input id="cv-linkedin"></div>
+          <div class="pf"><label>Website</label><input id="cv-web"></div>
+          <div class="pf fw"><label>Professional Summary</label><textarea id="cv-summary"></textarea></div>
+          <div class="pf fw"><label>Current Role & Responsibilities</label><textarea id="cv-current"></textarea></div>
+          <div class="pf fw"><label>Previous Experience</label><textarea id="cv-prev"></textarea></div>
+          <div class="pf fw"><label>Languages</label><input id="cv-langs"></div>
+        </div>
+        <span class="box-label">Skills</span>
+        <div style="display:flex;gap:7px;margin-bottom:8px">
+          <input id="skill-in" placeholder="Type a skill and press Enter..." style="flex:1;padding:7px 10px;border:1px solid #d1d5db;border-radius:7px;font-size:12px;font-family:inherit" onkeydown="addSkill(event)">
+          <button onclick="addSkill({key:'Enter'})" style="padding:7px 12px;border:none;border-radius:7px;background:#0D1B2A;color:#fff;cursor:pointer;font-size:12px">Add</button>
+        </div>
+        <div class="tags" id="skills-tags"></div>
+        <div style="margin-top:14px;display:flex;gap:8px">
+          <button onclick="saveProfile()" style="padding:8px 16px;background:#0DB5B5;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">💾 Save Profile</button>
+          <button onclick="loadDefaultProfile()" style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:12px;cursor:pointer;background:#fff">↺ Reset</button>
+        </div>
+        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #e5e7eb">
+          <span class="box-label">Gemini API Key</span>
+          <div class="input-row" style="margin-bottom:8px">
+            <input id="gemini-key" type="password" placeholder="Paste Gemini API key (AIza...)">
+            <button onclick="saveGeminiKey()" style="padding:8px 14px;background:#0D1B2A;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">Save Key</button>
+          </div>
+          <p style="font-size:11px;color:#6b7280;line-height:1.5">Stored locally in this app. AI search, matching, job hunt, and drafting all use Gemini.</p>
+        </div>
+      </div>
+    </div>
+    <div id="platform-export-sub" class="sub-section">
+      <p style="font-size:12px;color:#6b7280;margin-bottom:14px">Click <strong>Generate</strong> — copy and paste directly into your profile.</p>
+      <div class="export-grid" id="export-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ADD ORG MODAL -->
+<div class="modal-bg" id="add-modal">
+  <div class="modal-box">
+    <h3>Add organization</h3>
+    <div class="mf"><label>Name</label><input id="f-name"></div>
+    <div class="mf"><label>Location</label><input id="f-loc"></div>
+    <div class="mf"><label>Type</label><input id="f-type"></div>
+    <div class="mf"><label>Lane</label><select id="f-lane"><option value="local">Local Bosnia</option><option value="erasmus">Erasmus+</option><option value="eor">EOR / Remote EU</option><option value="network">Network</option></select></div>
+    <div class="mf"><label>Priority</label><select id="f-pri"><option value="1">1 — High</option><option value="2">2 — Medium</option><option value="3">3 — Watch</option></select></div>
+    <div class="mf"><label>Contact</label><input id="f-contact"></div>
+    <div class="mf"><label>Website</label><input id="f-web"></div>
+    <div class="mf"><label>Notes</label><textarea id="f-notes"></textarea></div>
+    <div class="modal-btns"><button class="btn-cancel" onclick="closeAdd()">Cancel</button><button class="btn-ok" onclick="saveNew()">Add</button></div>
+  </div>
+</div>
+
+<!-- AI OUTPUT MODAL -->
+<div class="modal-bg" id="ai-modal">
+  <div class="ai-modal-box">
+    <div class="ai-modal-head">
+      <div><h3 id="ai-title">Generating…</h3><div class="ai-sub" id="ai-org"></div></div>
+      <button class="mclose" onclick="closeAI()">✕</button>
+    </div>
+    <div class="ai-body">
+      <div class="type-tabs">
+        <button class="type-tab active" id="tab-email" onclick="switchTab('email')">✉ Email</button>
+        <button class="type-tab" id="tab-cover" onclick="switchTab('cover')">📄 Cover Letter</button>
+      </div>
+      <div class="ai-out loading" id="ai-out">Generating…</div>
+    </div>
+    <div class="ai-foot">
+      <button class="btn-copy" id="copy-btn" onclick="copyAI()">Copy</button>
+      <button class="btn-regen" onclick="regen()">↺ Regenerate</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─────────────────────────────────────────────────
+// CONSTANTS
+// ─────────────────────────────────────────────────
+const STATUSES=['not_started','contacted','replied','meeting','progress','not_pursuing'];
+const SL={not_started:'Not started',contacted:'Contacted',replied:'Replied',meeting:'Meeting set',progress:'In progress',not_pursuing:'Not pursuing'};
+const LL={local:'Bosnia local',erasmus:'Erasmus+',eor:'EOR / Remote EU',network:'Personal network'};
+const LC={local:'tag-green',erasmus:'tag-teal',eor:'tag-blue',network:'tag-purple'};
+
+const MALCOLM=`Malcolm Wu — Strategic Manager & Startup Ecosystem Builder relocating to Banja Luka, Bosnia & Herzegovina mid-2026.
+Skills: innovation hub management, startup ecosystem building, program design, SME digital adoption, multi-stakeholder partnerships, facilitation, community management, grant writing, event production.
+Experience: iCube Innovation (Strategic Manager, 2 hubs), Techstars Startup Weekend, Startup Grind Malaysia, Google Business Group Kuching, Taylor's University, Co-founder Roamly, Producer Borneo Beats Festival.
+Languages: English (fluent), Bahasa Malaysia (fluent), Mandarin (fluent), Bosnian/Serbian (learning).
+Target roles: Program Manager, Project Coordinator, Ecosystem Builder, Community Manager, Trainer, Innovation Facilitator, Partnerships Manager.`;
+
+const DEFAULT_CV={
+  name:'Malcolm Wu',title:'Strategic Manager | Startup Ecosystem Builder | Innovation Program Designer',
+  loc:'Banja Luka, Bosnia & Herzegovina (relocating mid-2026)',email:'',linkedin:'',web:'',
+  summary:'Experienced ecosystem builder with 8+ years managing innovation hubs, startup programs, and multi-stakeholder partnerships across Southeast Asia. Relocating to Bosnia & Herzegovina mid-2026. Seeking roles in NGOs, EU-funded programs, innovation hubs, or remote EU positions.',
+  current:'Strategic Manager, iCube Innovation, Sarawak Malaysia — Manages BDIH and SIC hubs. Designs startup programs, builds public-private-government partnerships, oversees SME digital adoption programs.',
+  prev:'Techstars Startup Weekend facilitator · Startup Grind Malaysia chapter leader · Google Business Group Kuching organizer · Taylor\'s University program design · Co-founder Roamly · Producer Borneo Beats Festival',
+  langs:'English (fluent), Bahasa Malaysia (fluent), Mandarin (fluent), Bosnian/Serbian (learning)',
+  skills:['Ecosystem Building','Innovation Hub Management','Program Design','Stakeholder Management','Grant Writing','Workshop Facilitation','Community Management','SME Development','Event Production','Startup Programs','Public-Private Partnerships','Strategic Planning']
+};
+
+const PLATFORMS=[
+  {id:'linkedin',name:'LinkedIn Jobs',icon:'🔗',color:'#0A66C2',type:'Global · Most important',desc:'#1 platform for professional outreach. Strong in Bosnia, EU NGOs and remote roles.',search:'https://www.linkedin.com/jobs/search/?keywords=program+manager+ecosystem+builder+innovation&location=Bosnia+and+Herzegovina',profile:'https://www.linkedin.com/profile/edit/',profileLabel:'Edit LinkedIn Profile'},
+  {id:'indeed',name:'Indeed',icon:'🔎',color:'#2164f3',type:'Global · High volume',desc:'Largest job board globally. Good for Bosnia local and international orgs.',search:'https://www.indeed.com/jobs?q=program+manager+ngo+innovation&l=Bosnia+and+Herzegovina',profile:'https://my.indeed.com/resume',profileLabel:'Build Indeed Resume'},
+  {id:'eures',name:'EURES — EU Jobs Portal',icon:'🇪🇺',color:'#003399',type:'Official EU portal',desc:'EU Employment Services. Essential for Erasmus+, EU-funded and cross-border roles.',search:'https://eures.europa.eu/jobs-and-ects_en?keywords=program+manager+innovation',profile:'https://eures.europa.eu/en/create-account',profileLabel:'Create EURES Profile'},
+  {id:'reliefweb',name:'ReliefWeb',icon:'🌍',color:'#e63946',type:'NGO · Development',desc:'UN-affiliated platform for humanitarian and development sector jobs.',search:'https://reliefweb.int/jobs?country=BIH',profile:'https://reliefweb.int/profile',profileLabel:'Create ReliefWeb Profile'},
+  {id:'devex',name:'DevEx',icon:'📊',color:'#1a7ba4',type:'Development sector',desc:'Leading platform for international development professionals. Great for GIZ, EU, USAID roles.',search:'https://www.devex.com/jobs/search#?q=program+manager+Bosnia',profile:'https://www.devex.com/register',profileLabel:'Create DevEx Profile'},
+  {id:'idealist',name:'Idealist',icon:'💚',color:'#2e7d32',type:'NGO · Nonprofit',desc:'Dedicated to nonprofit and social-impact jobs worldwide.',search:'https://www.idealist.org/en/jobs?q=program+manager+innovation&l=Bosnia',profile:'https://www.idealist.org/en/register',profileLabel:'Create Idealist Profile'},
+  {id:'impactpool',name:'Impactpool',icon:'🌱',color:'#00897b',type:'Int\'l development · UN',desc:'Specializes in international organizations, UN agencies, EU institutions.',search:'https://www.impactpool.org/search?q=program+manager',profile:'https://www.impactpool.org/register',profileLabel:'Create Impactpool Profile'},
+  {id:'posao',name:'Posao.ba',icon:'🇧🇦',color:'#d62828',type:'Bosnia-specific',desc:'Bosnia\'s primary local job portal. Essential for Banja Luka–based positions.',search:'https://www.posao.ba/oglasi-za-posao/?q=menadzer+program',profile:'https://www.posao.ba/registracija/',profileLabel:'Register on Posao.ba'},
+  {id:'eurobrussels',name:'EuroBrussels',icon:'⭐',color:'#003399',type:'EU institutions',desc:'EU institutions, think tanks, policy organizations.',search:'https://www.eurobrussels.com/jobs_list.php?keywords=program+manager',profile:'https://www.eurobrussels.com/register.php',profileLabel:'Create EuroBrussels Profile'},
+];
+const PLATFORM_PROMPTS={
+  linkedin:{label:'LinkedIn Headline + About + Skills',instruction:'Generate: 1) LinkedIn headline (max 120 chars, pipe-separated). 2) LinkedIn About section (max 2,600 chars, 4 paragraphs: hook, expertise, current work, what Malcolm seeks). 3) Top 10 LinkedIn skills as comma list. Label each section clearly.'},
+  indeed:{label:'Indeed Resume Summary',instruction:'Write an Indeed Resume Summary (3-4 sentences, ATS keyword-rich, no first person).'},
+  eures:{label:'EURES Profile Summary',instruction:'Write a EURES professional profile summary (200-250 words). Emphasize European relevance, cross-border experience, languages, EU-funded program fit.'},
+  devex:{label:'DevEx Professional Summary',instruction:'Write a DevEx summary (200-250 words). Emphasize international development fit, program coordination, capacity building, EU/development agency connections.'},
+  reliefweb:{label:'ReliefWeb Profile',instruction:'Write a ReliefWeb profile (150-200 words). Emphasize program management, stakeholder coordination, community development.'},
+  impactpool:{label:'Impactpool Professional Profile',instruction:'Write an Impactpool summary (180-220 words) for UN agencies, EU institutions, international development orgs.'},
+};
+
+// ─────────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────────
+let orgs=[], currentFilter='all', addedIds=new Set();
+let aiState={orgId:null,type:'email',eText:'',cText:''};
+let matchHistory=[], curMatch=null, selChipQ='';
+let cvData=JSON.parse(JSON.stringify(DEFAULT_CV)), platformStatus={}, geminiApiKey='';
+const exportCache={};
+
+const DEFAULT_ORGS=[
+  {id:'icbl',name:'ICBL — Innovation Centre Banja Luka',location:'Banja Luka',type:'Innovation Hub',priority:1,lane:'local',contact:'info@icbl.ba',website:'icbl.ba',notes:'GIZ-funded, EU-connected.',status:'not_started',updatedAt:null},
+  {id:'bravo',name:'BRAVO BiH',location:'Sarajevo',type:'NGO / Erasmus+',priority:1,lane:'erasmus',contact:'office@bravo-bih.com',website:'bravo-bih.com',notes:'Most active Erasmus+ org in BiH.',status:'not_started',updatedAt:null},
+  {id:'neo',name:'NEO BiH — National Erasmus+ Office',location:'Sarajevo',type:'Gateway',priority:2,lane:'erasmus',contact:'office@erasmusbih.com',website:'erasmusbih.com',notes:'Not a direct employer. Ask for referrals.',status:'not_started',updatedAt:null},
+  {id:'giz',name:'GIZ BiH',location:'Sarajevo',type:'Development Agency',priority:2,lane:'erasmus',contact:'giz.de jobs portal',website:'giz.de',notes:'Fixed-term project coordinator roles.',status:'not_started',updatedAt:null},
+  {id:'garaza',name:'Association Garaza',location:'Mostar',type:'Youth NGO',priority:2,lane:'erasmus',contact:'Find via LinkedIn',website:'',notes:'Erasmus+ CBY training.',status:'not_started',updatedAt:null},
+  {id:'intera',name:'INTERA Technology Park',location:'Mostar',type:'Tech Park',priority:3,lane:'local',contact:'Via ICBL intro',website:'',notes:'Partnered with ICBL on Train the Trainers.',status:'not_started',updatedAt:null},
+  {id:'zeda',name:'ZEDA — Zenica Economic Dev Agency',location:'Zenica',type:'Dev Agency',priority:3,lane:'local',contact:'Mirza (PM)',website:'',notes:'Referral ask only.',status:'not_started',updatedAt:null},
+  {id:'slavica',name:'Slavica',location:'Germany',type:'Network',priority:1,lane:'network',contact:'WhatsApp',website:'',notes:'From BL, based in Germany.',status:'not_started',updatedAt:null},
+  {id:'biljana',name:'Biljana',location:'Banja Luka',type:'Network — Partner',priority:1,lane:'network',contact:'Direct',website:'',notes:'Ask about NGO/uni/coworking contacts in BL.',status:'not_started',updatedAt:null},
+  {id:'neris-ana-mia',name:'Neris, Ana & Mia',location:'Banja Luka',type:'Network',priority:1,lane:'network',contact:'Direct — Capoeira',website:'',notes:'Most underused asset. Ask for warm intros.',status:'not_started',updatedAt:null},
+  {id:'chris',name:'Contramestre Vaqueiro (Chris Maier)',location:'Germany',type:'Network',priority:2,lane:'eor',contact:'Direct — Capoeira',website:'',notes:'Ask about EOR companies in Germany.',status:'not_started',updatedAt:null},
+  {id:'jara',name:'Jara',location:'Amsterdam',type:'Network',priority:2,lane:'eor',contact:'Direct',website:'',notes:'Netherlands NGO scene.',status:'not_started',updatedAt:null},
+];
+
+// ─────────────────────────────────────────────────
+// STORAGE
+// ─────────────────────────────────────────────────
+const storage=(window.storage&&typeof window.storage.get==='function'&&typeof window.storage.set==='function')
+  ? window.storage
+  : {
+      async get(key){
+        const value=window.localStorage.getItem(key);
+        return value===null?null:{value};
+      },
+      async set(key,value){
+        window.localStorage.setItem(key,value);
+        return {ok:true};
+      }
+    };
+async function load(){
+  try{const r=await storage.get('orgs-v6');if(r&&r.value)orgs=mergeOrgs(DEFAULT_ORGS,JSON.parse(r.value));else orgs=JSON.parse(JSON.stringify(DEFAULT_ORGS));}catch{orgs=JSON.parse(JSON.stringify(DEFAULT_ORGS));}
+  try{const a=await storage.get('added-ids');if(a&&a.value)addedIds=new Set(JSON.parse(a.value));}catch{}
+  try{const h=await storage.get('match-hist-v3');if(h&&h.value)matchHistory=JSON.parse(h.value);}catch{}
+  try{const c=await storage.get('cv-data');if(c&&c.value)cvData={...DEFAULT_CV,...JSON.parse(c.value)};}catch{}
+  try{const p=await storage.get('plat-status');if(p&&p.value)platformStatus=JSON.parse(p.value);}catch{}
+  try{const k=await storage.get('gemini-api-key');if(k&&k.value)geminiApiKey=k.value;}catch{}
+  render();renderPlatforms();loadCVForm();renderMatchHist();
+  syncGeminiKeyUI();
+}
+function mergeOrgs(defs,saved){
+  const m={};saved.forEach(o=>m[o.id]=o);
+  const r=defs.map(d=>m[d.id]?{...d,status:m[d.id].status,notes:m[d.id].notes,updatedAt:m[d.id].updatedAt}:d);
+  saved.forEach(s=>{if(!defs.find(d=>d.id===s.id))r.push(s);});return r;
+}
+async function saveOrgs(){try{await storage.set('orgs-v6',JSON.stringify(orgs));showToast('Saved');}catch{}}
+function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400);}
+
+// ─────────────────────────────────────────────────
+// API — GEMINI
+// ─────────────────────────────────────────────────
+function syncGeminiKeyUI(){
+  const input=document.getElementById('gemini-key');
+  if(input)input.value=geminiApiKey||'';
+}
+async function saveGeminiKey(){
+  const input=document.getElementById('gemini-key');
+  if(!input)return;
+  geminiApiKey=input.value.trim();
+  try{
+    await storage.set('gemini-api-key',geminiApiKey);
+    showToast(geminiApiKey?'Gemini key saved':'Gemini key cleared');
+  }catch{
+    showToast('Could not save Gemini key');
+  }
+}
+function getGeminiText(data){
+  const candidates=data?.candidates||[];
+  const parts=candidates.flatMap(c=>c?.content?.parts||[]);
+  const text=parts.filter(p=>typeof p.text==='string').map(p=>p.text).join('').trim();
+  return text;
+}
+async function callGemini({system,userMsg,useSearch=false,maxTokens=2000}){
+  if(!geminiApiKey)throw new Error('Missing Gemini API key. Save it in My Profile first.');
+  const prompt=system?`${system}\n\n${userMsg}`:userMsg;
+  const body={
+    contents:[{role:'user',parts:[{text:prompt}]}],
+    generationConfig:{maxOutputTokens:maxTokens}
+  };
+  if(useSearch)body.tools=[{google_search:{}}];
+  let res,data;
+  try{
+    res=await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${encodeURIComponent(geminiApiKey)}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(body)
+    });
+    data=await res.json();
+  }catch(e){throw new Error('Network error — check connection: '+e.message);}
+  if(!res.ok||data.error){
+    const msg=data?.error?.message||('HTTP '+res.status);
+    if((data?.error?.status||'')==='RESOURCE_EXHAUSTED'||res.status===429)throw new Error('Gemini quota exceeded. Check billing, rate limits, or try again later.');
+    if((data?.error?.status||'')==='PERMISSION_DENIED'||res.status===403)throw new Error('Gemini rejected this request. Check that the API key is valid and allowed for this API.');
+    if((data?.error?.status||'')==='INVALID_ARGUMENT'||res.status===400)throw new Error('Gemini rejected the request payload: '+msg);
+    throw new Error('API error: '+msg);
+  }
+  const text=getGeminiText(data);
+  if(!text)throw new Error('Empty response from Gemini — please try again');
+  return text;
+}
+function parseJSON(raw,sc){
+  if(!raw)return null;
+  try{
+    const c=raw.replace(/```json|```/g,'').trim();
+    const s=c.indexOf(sc),e=sc==='{'?c.lastIndexOf('}'):c.lastIndexOf(']');
+    if(s!==-1&&e>s)return JSON.parse(c.slice(s,e+1));
+  }catch(e){console.warn('parseJSON failed:',e.message,raw.substring(0,200));}
+  return null;
+}
+function showErr(id,msg){
+  document.getElementById(id).innerHTML=`<div class="err-box"><strong>⚠️ Error:</strong> ${msg}</div>`;
+}
+
+// ─────────────────────────────────────────────────
+// VIEWS
+// ─────────────────────────────────────────────────
+function showView(v){
+  document.querySelectorAll('.view').forEach(el=>el.classList.remove('active'));
+  document.getElementById(v+'-view').classList.add('active');
+  document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['tracker','discover','match','jobs','profile'][i]===v));
+  if(v==='profile')renderExportGrid();
+}
+function showSub(id){
+  document.querySelectorAll('#jobs-view .sub-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id+'-sub').classList.add('active');
+  document.querySelectorAll('#jobs-view .sub-tab').forEach((t,i)=>t.classList.toggle('active',['platforms','ai-hunt'][i]===id));
+}
+function showProfileSub(id){
+  document.querySelectorAll('#profile-view .sub-section').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id+'-sub').classList.add('active');
+  document.querySelectorAll('#profile-view .sub-tab').forEach((t,i)=>t.classList.toggle('active',['cv-editor','platform-export'][i]===id));
+  if(id==='platform-export')renderExportGrid();
+}
+
+// ─────────────────────────────────────────────────
+// TRACKER
+// ─────────────────────────────────────────────────
+function setFilter(f,e){currentFilter=f;document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));if(e&&e.target)e.target.classList.add('active');renderList();}
+function cycleStatus(id){
+  const o=orgs.find(x=>x.id===id);if(!o)return;
+  const i=STATUSES.indexOf(o.status);o.status=STATUSES[(i+1)%STATUSES.length];
+  o.updatedAt=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  saveOrgs();renderList();renderStats();
+}
+function updateNote(id,val){
+  const o=orgs.find(x=>x.id===id);if(!o)return;o.notes=val;
+  o.updatedAt=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  debounce(()=>saveOrgs(),900,id)();
+}
+const DT={};function debounce(fn,d,k){return()=>{clearTimeout(DT[k]);DT[k]=setTimeout(fn,d);};}
+function render(){renderStats();renderList();}
+function renderStats(){
+  const c={total:orgs.length};STATUSES.forEach(s=>c[s]=orgs.filter(o=>o.status===s).length);
+  document.getElementById('stats').innerHTML=`
+    <div class="stat s-total"><div class="n">${c.total}</div><div class="l">Total</div></div>
+    <div class="stat s-p"><div class="n">${c.not_started}</div><div class="l">Pending</div></div>
+    <div class="stat s-c"><div class="n">${c.contacted}</div><div class="l">Contacted</div></div>
+    <div class="stat s-r"><div class="n">${c.replied}</div><div class="l">Replied</div></div>
+    <div class="stat s-m"><div class="n">${c.meeting}</div><div class="l">Meeting</div></div>
+    <div class="stat s-pr"><div class="n">${c.progress}</div><div class="l">In Progress</div></div>`;
+}
+function renderList(){
+  const filtered=currentFilter==='all'?orgs:orgs.filter(o=>o.status===currentFilter);
+  const el=document.getElementById('list');
+  if(!filtered.length){el.innerHTML='<div class="empty-box">No organizations match this filter.</div>';return;}
+  el.innerHTML=[...filtered].sort((a,b)=>a.priority-b.priority||a.name.localeCompare(b.name)).map(o=>`
+    <div class="tc">
+      <div class="tc-top">
+        <div class="pri pri${o.priority}">${o.priority}</div>
+        <div class="tc-main">
+          <div class="tc-name">${o.name}</div>
+          <div class="tc-meta">${o.location} · ${o.type}</div>
+          <div class="tags"><span class="tag ${LC[o.lane]||'tag-gray'}">${LL[o.lane]||o.lane}</span></div>
+          <div class="st-row">
+            <button class="sbtn st-${o.status}" onclick="cycleStatus('${o.id}')">${SL[o.status]}</button>
+            ${o.updatedAt?`<span class="upd">Updated ${o.updatedAt}</span>`:''}
+          </div>
+        </div>
+      </div>
+      ${o.contact?`<div class="tc-contact"><span>${o.contact}</span>${o.website?`<span><a href="https://${o.website.replace(/^https?:\/\//,'')}" target="_blank">${o.website}</a></span>`:''}</div>`:''}
+      <div class="tc-notes"><textarea class="ni" placeholder="Notes..." oninput="updateNote('${o.id}',this.value)">${o.notes||''}</textarea></div>
+      <div class="tc-actions">
+        <button class="ai-btn ai-btn-email" onclick="openAI('${o.id}','email')">✉ Draft Email</button>
+        <button class="ai-btn ai-btn-cover" onclick="openAI('${o.id}','cover')">📄 Cover Letter</button>
+      </div>
+    </div>`).join('');
+}
+
+// ─────────────────────────────────────────────────
+// DISCOVER
+// ─────────────────────────────────────────────────
+function selChip(el,q){document.querySelectorAll('#discover-view .chip').forEach(c=>c.classList.remove('on'));el.classList.add('on');selChipQ=q;document.getElementById('disc-q').value='';}
+async function runDiscover(){
+  const q=document.getElementById('disc-q').value.trim()||selChipQ||'innovation NGOs Bosnia Herzegovina hiring';
+  const region=document.getElementById('disc-region').value,type=document.getElementById('disc-type').value;
+  const btn=document.getElementById('disc-btn');btn.disabled=true;btn.textContent='Searching…';
+  document.getElementById('disc-results').innerHTML=`<div class="loading-box"><div class="big-spin"></div><p>Searching the web…</p></div>`;
+  try{
+    const res=await callGemini({useSearch:true,maxTokens:2000,
+      system:'Search the web for real organizations. Respond with ONLY a raw JSON array — no markdown, no explanation.',
+      userMsg:`Find real organizations in "${region}" of type "${type}" matching Malcolm's profile:\n${MALCOLM}\nSearch: "${q}"\nReturn JSON array of 5-8 orgs with keys: name, location, type, lane(local/erasmus/eor/network), priority(1-3), website, contact, why_fit, notes`});
+    const recs=parseJSON(res,'[');
+    if(!recs||!recs.length){showErr('disc-results','No results returned. Try different search terms.');return;}
+    document.getElementById('disc-results').innerHTML=`
+      <div style="font-size:12px;color:#374151;margin-bottom:10px;padding:8px 12px;background:#f0f9ff;border-radius:7px;border:1px solid #bae6fd">Found <strong>${recs.length} organizations</strong> for: <em>${q.substring(0,70)}</em></div>
+      <div style="display:flex;flex-direction:column;gap:10px">${recs.map((r,i)=>{
+        const tid='r'+Date.now()+i;r._t=tid;
+        const added=orgs.some(o=>o.name===r.name)||addedIds.has(tid);
+        return `<div class="rec-card">
+          <div class="rec-head"><div><div class="rec-name">${r.name}</div><div class="rec-meta">${r.location} · ${r.type}</div></div>
+            <button class="rec-add ${added?'added':''}" id="rb-${tid}" onclick="addRec(${JSON.stringify(r).replace(/"/g,'&quot;')},'${tid}')" ${added?'disabled':''}>${added?'✓ Added':'+ Tracker'}</button>
+          </div>
+          <div class="rec-why">${r.why_fit||''}</div>
+          <div class="tags"><span class="tag ${LC[r.lane]||'tag-gray'}">${LL[r.lane]||r.lane}</span><span class="tag tag-orange">P${r.priority||2}</span></div>
+          ${r.website?`<div style="font-size:11px;color:#6b7280;margin-top:5px">🌐 <a href="https://${r.website.replace(/^https?:\/\//,'')}" target="_blank" style="color:#0DB5B5">${r.website}</a></div>`:''}
+        </div>`;}).join('')}</div>`;
+  }catch(e){showErr('disc-results',e.message);console.error(e);}
+  btn.disabled=false;btn.textContent='🔍 Search for opportunities';
+}
+function addRec(r,tid){
+  orgs.push({id:'d'+Date.now(),name:r.name,location:r.location,type:r.type,lane:r.lane||'local',priority:r.priority||2,contact:r.contact||'',website:r.website||'',notes:(r.notes||'')+(r.why_fit?'\n\nWhy a fit: '+r.why_fit:''),status:'not_started',updatedAt:null});
+  addedIds.add(tid);saveOrgs();
+  try{storage.set('added-ids',JSON.stringify([...addedIds]));}catch{}
+  const btn=document.getElementById('rb-'+tid);if(btn){btn.textContent='✓ Added';btn.className='rec-add added';btn.disabled=true;}
+}
+
+// ─────────────────────────────────────────────────
+// SKILL MATCH
+// ─────────────────────────────────────────────────
+function setMI(v){document.getElementById('match-in').value=v;}
+async function runMatch(){
+  const input=document.getElementById('match-in').value.trim();if(!input)return;
+  const btn=document.getElementById('match-btn');btn.disabled=true;btn.textContent='Analyzing…';
+  curMatch=null;
+  document.getElementById('match-result').innerHTML=`<div class="loading-box"><div class="big-spin"></div><p>Researching <strong>${input}</strong> and matching against your CV…</p></div>`;
+  const isURL=/^(https?:\/\/|www\.)|[a-z0-9-]+\.[a-z]{2,}$/i.test(input);
+  try{
+    const res=await callGemini({useSearch:true,maxTokens:2000,
+      system:'Research the organization using web search. Respond with ONLY a raw JSON object — no markdown, no text before or after the JSON.',
+      userMsg:`Analyze this org for job fit with Malcolm Wu.\n${isURL?'Website: '+input:'Organization: '+input}\n\nMalcolm:\n${MALCOLM}\n\nReturn one JSON object with keys: company_name, company_overview, company_type, location, website, contact, match_score(0-100 integer), match_level("Strong Match"/"Good Match"/"Partial Match"/"Weak Match"), matched_skills(array), skill_gaps(array), transferable_skills(array), recommended_roles(array), key_talking_points(array), approach_strategy, lane(local/erasmus/eor/network), priority(1-3), notes`});
+    const result=parseJSON(res,'{');
+    if(!result){showErr('match-result','Could not parse result. Check console for raw output.');console.warn('Raw:',res);btn.disabled=false;btn.textContent='Analyze';return;}
+    curMatch=result;
+    matchHistory=[{company_name:result.company_name,input,score:result.match_score,level:result.match_level,result},...matchHistory.filter(h=>h.company_name!==result.company_name)].slice(0,8);
+    try{await storage.set('match-hist-v3',JSON.stringify(matchHistory));}catch{}
+    renderMatchHist();renderMatchResult(result);
+  }catch(e){showErr('match-result',e.message);console.error(e);}
+  btn.disabled=false;btn.textContent='Analyze';
+}
+function loadCachedMatch(i){
+  const h=matchHistory[i];if(!h)return;
+  document.getElementById('match-in').value=h.input;
+  if(h.result){curMatch=h.result;renderMatchResult(h.result);}else runMatch();
+}
+function renderMatchHist(){
+  const el=document.getElementById('match-hist');
+  if(!matchHistory.length){el.innerHTML='';return;}
+  el.innerHTML=`<div style="margin-bottom:12px"><span class="box-label">Recent — click to reload</span><div class="chips">${matchHistory.map((h,i)=>`<span class="chip" onclick="loadCachedMatch(${i})">${h.company_name} <span style="opacity:.6">${h.score}/100</span></span>`).join('')}</div></div>`;
+}
+function renderMatchResult(r){
+  const s=r.match_score||0;
+  const sc=s>=75?'sc-hi-ring':s>=50?'sc-mid-ring':'sc-lo-ring';
+  const lc=s>=75?'#10b981':s>=50?'#f59e0b':'#ef4444';
+  const already=orgs.some(o=>o.name===r.company_name);
+  document.getElementById('match-result').innerHTML=`
+    <div class="match-result">
+      <div class="match-head">
+        <div style="flex:1;min-width:0">
+          <div class="match-org-name">${r.company_name}</div>
+          <div class="match-org-meta">${r.location||''} · ${r.company_type||''}</div>
+          <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:10px">
+            <button id="m-add-top" onclick="addMatchToTracker()" ${already?'disabled':''} style="padding:8px 16px;background:${already?'#d1fae5':'#0DB5B5'};color:${already?'#065f46':'#fff'};border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">${already?'✓ Already in Tracker':'➕ Add to Tracker'}</button>
+            <button onclick="openAIFromMatch()" style="padding:8px 14px;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#5b21b6;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">✉ Draft outreach</button>
+            ${r.website?`<a href="https://${r.website.replace(/^https?:\/\//,'')}" target="_blank" style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:600;color:#374151;text-decoration:none;background:#fff">🌐 Visit website</a>`:''}
+          </div>
+        </div>
+        <div class="score-ring">
+          <div class="score-circle ${sc}"><span class="score-num">${s}</span><span class="score-pct">/100</span></div>
+          <div class="match-level" style="color:${lc}">${r.match_level||''}</div>
+        </div>
+      </div>
+      <div class="match-body">
+        <div class="ms"><div class="ms-title">About</div><div class="ms-box">${r.company_overview||''}</div></div>
+        <div class="ms"><div class="ms-title">✅ Skills that match</div><div class="skill-tags">${(r.matched_skills||[]).map(x=>`<span class="sk sk-y">${x}</span>`).join('')}</div></div>
+        ${(r.transferable_skills||[]).length?`<div class="ms"><div class="ms-title">🔄 Transferable</div><div class="skill-tags">${r.transferable_skills.map(x=>`<span class="sk sk-t">${x}</span>`).join('')}</div></div>`:''}
+        ${(r.skill_gaps||[]).length?`<div class="ms"><div class="ms-title">⚠️ Gaps</div><div class="skill-tags">${r.skill_gaps.map(x=>`<span class="sk sk-n">${x}</span>`).join('')}</div></div>`:''}
+        <div class="ms"><div class="ms-title">🎯 Recommended roles</div><div class="role-list">${(r.recommended_roles||[]).map(x=>`<span class="role-tag">${x}</span>`).join('')}</div></div>
+        <div class="ms"><div class="ms-title">💬 Key talking points</div><ul class="tp-list">${(r.key_talking_points||[]).map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        <div class="ms"><div class="ms-title">🗺 Approach strategy</div><div class="ms-box yellow">${r.approach_strategy||''}</div></div>
+        ${r.notes?`<div class="ms"><div class="ms-title">🔎 Intel</div><div class="ms-box">${r.notes}</div></div>`:''}
+      </div>
+    </div>`;
+}
+function addMatchToTracker(){
+  if(!curMatch)return;const r=curMatch;
+  orgs.push({id:'m'+Date.now(),name:r.company_name,location:r.location||'',type:r.company_type||'',lane:r.lane||'local',priority:r.priority||2,contact:r.contact||'',website:r.website||'',notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(r.recommended_roles?'\n\nTarget roles: '+r.recommended_roles.join(', '):''),status:'not_started',updatedAt:null});
+  saveOrgs();const btn=document.getElementById('m-add-top');if(btn){btn.textContent='✓ Added to Tracker';btn.style.background='#d1fae5';btn.style.color='#065f46';btn.disabled=true;}
+}
+function openAIFromMatch(){
+  if(!curMatch)return;const r=curMatch;
+  const t={id:'_mtmp',name:r.company_name,location:r.location,type:r.company_type,lane:r.lane||'local',contact:r.contact,notes:`Match: ${r.match_score}/100 — ${r.match_level}\nApproach: ${r.approach_strategy}\nTalking points: ${(r.key_talking_points||[]).join('; ')}\nTarget roles: ${(r.recommended_roles||[]).join(', ')}`};
+  const ex=orgs.find(o=>o.id==='_mtmp');if(ex)Object.assign(ex,t);else orgs.push(t);
+  openAI('_mtmp','email');
+}
+
+// ─────────────────────────────────────────────────
+// JOB BOARDS
+// ─────────────────────────────────────────────────
+function renderPlatforms(){
+  document.getElementById('platform-grid').innerHTML=PLATFORMS.map(p=>{
+    const st=platformStatus[p.id]||'not_set';
+    const dc=st==='done'?'#10b981':st==='in_progress'?'#f59e0b':'#d1d5db';
+    const dl=st==='done'?'Profile set up':st==='in_progress'?'In progress':'Not set up yet';
+    return `<div class="platform-card">
+      <div class="platform-head"><div class="platform-icon" style="background:${p.color}22">${p.icon}</div>
+        <div><div class="platform-name">${p.name}</div><div class="platform-type">${p.type}</div></div>
+      </div>
+      <div class="p-status"><div class="p-dot" style="background:${dc}"></div><span style="font-size:11px;font-weight:600;color:${dc}">${dl}</span>
+        <span style="margin-left:auto;font-size:10px;cursor:pointer;color:#9ca3af" onclick="cyclePlat('${p.id}')">change</span>
+      </div>
+      <div class="platform-desc">${p.desc}</div>
+      <div class="platform-btns">
+        <a href="${p.search}" target="_blank" class="p-search-btn">🔎 Search Jobs</a>
+        <a href="${p.profile}" target="_blank" class="p-profile-btn">${p.profileLabel}</a>
+      </div>
+    </div>`;}).join('');
+}
+function cyclePlat(id){
+  const s=['not_set','in_progress','done'];const c=platformStatus[id]||'not_set';
+  platformStatus[id]=s[(s.indexOf(c)+1)%s.length];
+  try{storage.set('plat-status',JSON.stringify(platformStatus));}catch{}renderPlatforms();
+}
+function setHunt(v){document.getElementById('hunt-role').value=v;}
+async function runHunt(){
+  const role=document.getElementById('hunt-role').value.trim();
+  const loc=document.getElementById('hunt-loc').value;
+  const btn=document.getElementById('hunt-btn');btn.disabled=true;btn.textContent='Searching…';
+  document.getElementById('hunt-results').innerHTML=`<div class="loading-box"><div class="big-spin"></div><p>Searching LinkedIn, Indeed, ReliefWeb, DevEx, EURES…</p></div>`;
+  try{
+    const res=await callGemini({useSearch:true,maxTokens:2000,
+      system:'Search for real job listings. Respond with ONLY a raw JSON array — no markdown, no explanation.',
+      userMsg:`Search LinkedIn, Indeed, ReliefWeb, DevEx, EURES, Idealist for current open jobs.\nRole: "${role}" Location: "${loc}"\nMalcolm: ${MALCOLM}\nFind 5-8 real open listings. Return JSON array with keys: title, company, location, platform, url, description, match_score(0-100), why_fit, posted`});
+    const jobs=parseJSON(res,'[');
+    if(!jobs||!jobs.length){showErr('hunt-results','No listings found. Try different keywords.');return;}
+    document.getElementById('hunt-results').innerHTML=`<div style="font-size:12px;color:#374151;margin-bottom:10px;padding:8px 12px;background:#f0f9ff;border-radius:7px;border:1px solid #bae6fd">Found <strong>${jobs.length} listings</strong> for "${role}" in ${loc}</div>
+    ${jobs.map((j,i)=>{
+      const sid='js'+Date.now()+i;
+      const s=j.match_score||70;
+      const sc=s>=75?'sc-hi':s>=55?'sc-mid':'sc-lo';
+      return `<div class="job-card">
+        <div class="job-head"><div class="job-title">${j.title}</div><div class="job-score ${sc}">${s}%</div></div>
+        <div class="job-meta"><span>🏢 ${j.company}</span><span>📍 ${j.location}</span><span>🌐 ${j.platform}</span>${j.posted?`<span>🕐 ${j.posted}</span>`:''}</div>
+        <div class="job-desc">${j.description||''}</div>
+        ${j.why_fit?`<div style="font-size:11px;padding:6px 9px;background:#f0f9ff;border-radius:6px;border-left:3px solid #0DB5B5;margin-bottom:9px;line-height:1.5">💡 ${j.why_fit}</div>`:''}
+        <div class="job-footer">
+          <a href="${j.url||'#'}" target="_blank" class="job-apply">Apply / View</a>
+          <button class="job-save" id="${sid}" onclick="saveJob(${JSON.stringify(j).replace(/"/g,'&quot;')},'${sid}')">+ Save to Tracker</button>
+        </div>
+      </div>`;}).join('')}`;
+  }catch(e){showErr('hunt-results',e.message);console.error(e);}
+  btn.disabled=false;btn.textContent='🤖 Find live job listings';
+}
+function saveJob(j,sid){
+  orgs.push({id:'j'+Date.now(),name:j.company+' — '+j.title,location:j.location,type:j.platform,lane:'local',priority:2,contact:j.url||'',website:'',notes:`Role: ${j.title}\nPlatform: ${j.platform}\nMatch: ${j.match_score}%\n${j.why_fit||''}\nApply: ${j.url||''}`,status:'not_started',updatedAt:null});
+  saveOrgs();const btn=document.getElementById(sid);if(btn){btn.textContent='✓ Saved';btn.className='job-save saved';btn.disabled=true;}
+}
+
+// ─────────────────────────────────────────────────
+// MY PROFILE
+// ─────────────────────────────────────────────────
+function loadCVForm(){
+  ['name','title','loc','email','linkedin','web','summary','current','prev','langs'].forEach(f=>{const el=document.getElementById('cv-'+f);if(el)el.value=cvData[f]||'';});
+  renderSkillTags();
+}
+function renderSkillTags(){
+  document.getElementById('skills-tags').innerHTML=(cvData.skills||[]).map((s,i)=>`<span class="skill-remove" onclick="removeSkill(${i})">${s} <span style="opacity:.6;font-size:9px">✕</span></span>`).join('');
+}
+function addSkill(e){
+  if(e.key!=='Enter'&&e.key!==',')return;
+  const inp=document.getElementById('skill-in');const v=inp.value.replace(/,$/,'').trim();
+  if(v&&!(cvData.skills||[]).includes(v)){cvData.skills=cvData.skills||[...DEFAULT_CV.skills];cvData.skills.push(v);}
+  inp.value='';renderSkillTags();
+}
+function removeSkill(i){if(cvData.skills)cvData.skills.splice(i,1);renderSkillTags();}
+function loadDefaultProfile(){cvData=JSON.parse(JSON.stringify(DEFAULT_CV));loadCVForm();}
+async function saveProfile(){
+  cvData={...cvData,name:document.getElementById('cv-name').value,title:document.getElementById('cv-title').value,loc:document.getElementById('cv-loc').value,email:document.getElementById('cv-email').value,linkedin:document.getElementById('cv-linkedin').value,web:document.getElementById('cv-web').value,summary:document.getElementById('cv-summary').value,current:document.getElementById('cv-current').value,prev:document.getElementById('cv-prev').value,langs:document.getElementById('cv-langs').value};
+  try{await storage.set('cv-data',JSON.stringify(cvData));showToast('Profile saved!');}catch{showToast('Save failed');}
+}
+function renderExportGrid(){
+  const pids=['linkedin','indeed','eures','devex','reliefweb','impactpool'];
+  document.getElementById('export-grid').innerHTML=pids.map(pid=>{
+    const p=PLATFORMS.find(x=>x.id===pid);const pp=PLATFORM_PROMPTS[pid];if(!p||!pp)return'';
+    const cached=exportCache[pid]||'';
+    return `<div class="export-card">
+      <div class="export-head"><div class="exp-pname"><span>${p.icon}</span>${p.name}</div>
+        <button class="exp-gen" onclick="genExport('${pid}')" id="gen-${pid}">✨ Generate</button>
+      </div>
+      <div style="font-size:11px;color:#6b7280;margin-bottom:8px">${pp.label}</div>
+      <div class="exp-content ${cached?'':'ph'}" id="exp-${pid}">${cached||'Click Generate to create optimized content…'}</div>
+      <div class="exp-actions">
+        <button class="exp-copy" id="copy-exp-${pid}" onclick="copyExport('${pid}')">Copy</button>
+        <a href="${p.profile}" target="_blank" class="exp-go">Open ${p.name} Profile →</a>
+      </div>
+    </div>`;}).join('');
+}
+async function genExport(pid){
+  const p=PLATFORMS.find(x=>x.id===pid);const pp=PLATFORM_PROMPTS[pid];if(!p||!pp)return;
+  const btn=document.getElementById('gen-'+pid);btn.textContent='…';btn.disabled=true;
+  document.getElementById('exp-'+pid).textContent='Generating…';
+  document.getElementById('exp-'+pid).className='exp-content ph';
+  const cv=cvData;
+  try{
+    const res=await callGemini({maxTokens:1500,
+      system:'Professional career writer. Output only the requested content, no preamble. Natural, human voice.',
+      userMsg:`Generate profile content for ${p.name} for:\nName: ${cv.name}\nTitle: ${cv.title}\nLocation: ${cv.loc}\nSummary: ${cv.summary}\nCurrent: ${cv.current}\nPrevious: ${cv.prev}\nLanguages: ${cv.langs}\nSkills: ${(cv.skills||[]).join(', ')}\n\n${pp.instruction}`});
+    exportCache[pid]=res;
+    document.getElementById('exp-'+pid).textContent=res;
+    document.getElementById('exp-'+pid).className='exp-content';
+  }catch(e){document.getElementById('exp-'+pid).textContent='Error: '+e.message;document.getElementById('exp-'+pid).className='exp-content ph';}
+  btn.textContent='✨ Regenerate';btn.disabled=false;
+}
+function copyExport(pid){
+  const text=document.getElementById('exp-'+pid).textContent;
+  if(!text||text.startsWith('Click'))return;
+  navigator.clipboard.writeText(text).then(()=>{
+    const b=document.getElementById('copy-exp-'+pid);b.textContent='✓ Copied!';b.className='exp-copy copied';
+    setTimeout(()=>{b.textContent='Copy';b.className='exp-copy';},2000);
+  });
+}
+
+// ─────────────────────────────────────────────────
+// AI DRAFTING
+// ─────────────────────────────────────────────────
+function openAI(orgId,type){
+  aiState={orgId,type,eText:'',cText:''};
+  const org=orgs.find(o=>o.id===orgId);
+  document.getElementById('ai-title').textContent=type==='email'?'Drafting outreach email…':'Drafting cover letter…';
+  document.getElementById('ai-org').textContent=org?org.name:'';
+  document.getElementById('ai-out').textContent='Generating…';document.getElementById('ai-out').className='ai-out loading';
+  document.getElementById('copy-btn').textContent='Copy';document.getElementById('copy-btn').className='btn-copy';
+  document.getElementById('tab-email').classList.toggle('active',type==='email');
+  document.getElementById('tab-cover').classList.toggle('active',type==='cover');
+  document.getElementById('ai-modal').classList.add('open');
+  genDraft(org,type);
+}
+function closeAI(){document.getElementById('ai-modal').classList.remove('open');}
+function switchTab(type){
+  aiState.type=type;
+  document.getElementById('tab-email').classList.toggle('active',type==='email');
+  document.getElementById('tab-cover').classList.toggle('active',type==='cover');
+  document.getElementById('copy-btn').textContent='Copy';document.getElementById('copy-btn').className='btn-copy';
+  const org=orgs.find(o=>o.id===aiState.orgId);
+  const cached=type==='email'?aiState.eText:aiState.cText;
+  if(cached){document.getElementById('ai-out').textContent=cached;document.getElementById('ai-out').className='ai-out';document.getElementById('ai-title').textContent=type==='email'?'Outreach Email':'Cover Letter';}
+  else{document.getElementById('ai-out').textContent='Generating…';document.getElementById('ai-out').className='ai-out loading';genDraft(org,type);}
+}
+function regen(){const org=orgs.find(o=>o.id===aiState.orgId);if(aiState.type==='email')aiState.eText='';else aiState.cText='';document.getElementById('ai-out').textContent='Regenerating…';document.getElementById('ai-out').className='ai-out loading';genDraft(org,aiState.type);}
+async function genDraft(org,type){
+  const isE=type==='email';
+  try{
+    const res=await callGemini({maxTokens:1000,
+      system:'Write warm, direct, confident outreach emails and cover letters for Malcolm Wu. Never sound like AI. Output ONLY the final text.',
+      userMsg:isE
+        ?`Short outreach email from Malcolm to ${org.name} (${org.type}, ${org.location}).\nMalcolm: ${MALCOLM}\nNotes: ${org.notes||'None.'}\nFirst line = subject (no label). Under 200 words. If notes say referral only, write networking email. End: Malcolm Wu.`
+        :`Cover letter from Malcolm Wu for ${org.name} (${org.type}, ${org.location}).\nMalcolm: ${MALCOLM}\nNotes: ${org.notes||'None.'}\n3-4 paragraphs, 300-380 words. Hook, experience, why this org, call to action. End: Warm regards, Malcolm Wu.`});
+    if(isE)aiState.eText=res;else aiState.cText=res;
+    document.getElementById('ai-out').textContent=res||'No output.';
+    document.getElementById('ai-out').className='ai-out';
+    document.getElementById('ai-title').textContent=isE?'Outreach Email':'Cover Letter';
+  }catch(e){document.getElementById('ai-out').textContent='Error: '+e.message;document.getElementById('ai-out').className='ai-out';}
+}
+function copyAI(){
+  navigator.clipboard.writeText(document.getElementById('ai-out').textContent).then(()=>{
+    const b=document.getElementById('copy-btn');b.textContent='✓ Copied!';b.className='btn-copy copied';
+    setTimeout(()=>{b.textContent='Copy';b.className='btn-copy';},2000);
+  });
+}
+
+// ─────────────────────────────────────────────────
+// ADD ORG MODAL
+// ─────────────────────────────────────────────────
+function openAdd(){document.getElementById('add-modal').classList.add('open');}
+function closeAdd(){document.getElementById('add-modal').classList.remove('open');}
+function saveNew(){
+  const name=document.getElementById('f-name').value.trim();if(!name)return;
+  orgs.push({id:'c'+Date.now(),name,location:document.getElementById('f-loc').value.trim(),type:document.getElementById('f-type').value.trim(),lane:document.getElementById('f-lane').value,priority:parseInt(document.getElementById('f-pri').value),contact:document.getElementById('f-contact').value.trim(),website:document.getElementById('f-web').value.trim(),notes:document.getElementById('f-notes').value.trim(),status:'not_started',updatedAt:null});
+  saveOrgs();render();closeAdd();
+  ['f-name','f-loc','f-type','f-contact','f-web','f-notes'].forEach(id=>document.getElementById(id).value='');
+}
+
+load();
+</script>
+</body>
+</html>
