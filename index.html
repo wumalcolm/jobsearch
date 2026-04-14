@@ -830,7 +830,7 @@ const PLATFORM_PROMPTS={
   reliefweb:{label:'ReliefWeb Profile',instruction:'Write a ReliefWeb profile (150-200 words). Emphasize program management, stakeholder coordination, community development.'},
   impactpool:{label:'Impactpool Professional Profile',instruction:'Write an Impactpool summary (180-220 words) for UN agencies, EU institutions, international development orgs.'},
 };
-const APP_UI_SYNC_VERSION='ui-sync-20260414';
+const APP_UI_SYNC_VERSION='ui-sync-20260414b';
 
 // ─────────────────────────────────────────────────
 // STATE
@@ -874,7 +874,7 @@ const storage=(window.storage&&typeof window.storage.get==='function'&&typeof wi
 async function load(){
   try{const r=await storage.get('orgs-v6');if(r&&r.value)orgs=mergeOrgs(DEFAULT_ORGS,JSON.parse(r.value));else orgs=JSON.parse(JSON.stringify(DEFAULT_ORGS));}catch{orgs=JSON.parse(JSON.stringify(DEFAULT_ORGS));}
   try{const a=await storage.get('added-ids');if(a&&a.value)addedIds=new Set(JSON.parse(a.value));}catch{}
-  try{const h=await storage.get('match-hist-v3');if(h&&h.value)matchHistory=JSON.parse(h.value);}catch{}
+  try{const h=await storage.get('match-hist-v3');if(h&&h.value)matchHistory=normalizeMatchHistoryEntries(JSON.parse(h.value));}catch{matchHistory=[];}
   try{const mc=await storage.get('match-collapsed');if(mc&&mc.value)matchCollapsed=JSON.parse(mc.value);}catch{}
   try{const mj=await storage.get('match-job-titles');if(mj&&mj.value)matchJobTitles=JSON.parse(mj.value);}catch{}
   try{const c=await storage.get('cv-data');if(c&&c.value)cvData={...DEFAULT_CV,...JSON.parse(c.value)};}catch{}
@@ -912,15 +912,7 @@ function findOrgByName(name=''){
   return orgs.find(o=>textVal(o.name).trim().toLowerCase()===target)||null;
 }
 function syncTrackerAndMatchState(){
-  matchHistory=matchHistory.map(h=>{
-    const result=h&&h.result?normalizeMatchResult(h.result):h.result;
-    return {
-      ...h,
-      score:normalizeMatchScore(h?.score ?? result?.match_score),
-      level:textVal(h?.level || result?.match_level),
-      result
-    };
-  });
+  matchHistory=normalizeMatchHistoryEntries(matchHistory);
 }
 async function saveOrgs(){
   try{
@@ -1238,16 +1230,62 @@ function toList(value){
     .filter(Boolean);
 }
 function normalizeMatchResult(result){
-  if(!result||typeof result!=='object')return result;
+  if(!result)return null;
+  if(typeof result!=='object'){
+    return {
+      company_name:textVal(result)||'Saved result',
+      company_overview:'',
+      company_type:'',
+      location:'',
+      website:'',
+      contact:'',
+      match_score:0,
+      match_level:'',
+      matched_skills:[],
+      skill_gaps:[],
+      transferable_skills:[],
+      recommended_roles:[],
+      key_talking_points:[],
+      generated_job_titles:[],
+      approach_strategy:'',
+      lane:'local',
+      priority:2,
+      notes:''
+    };
+  }
   const normalized={...result};
+  normalized.company_name=textVal(normalized.company_name)||'Saved result';
+  normalized.company_overview=textVal(normalized.company_overview);
+  normalized.company_type=textVal(normalized.company_type);
+  normalized.location=textVal(normalized.location);
+  normalized.website=textVal(normalized.website);
+  normalized.contact=textVal(normalized.contact);
   normalized.match_score=normalizeMatchScore(normalized.match_score);
+  normalized.match_level=textVal(normalized.match_level);
   normalized.matched_skills=toList(normalized.matched_skills);
   normalized.skill_gaps=toList(normalized.skill_gaps);
   normalized.transferable_skills=toList(normalized.transferable_skills);
   normalized.recommended_roles=toList(normalized.recommended_roles);
   normalized.key_talking_points=toList(normalized.key_talking_points);
   normalized.generated_job_titles=toList(normalized.generated_job_titles);
+  normalized.approach_strategy=textVal(normalized.approach_strategy);
+  normalized.notes=textVal(normalized.notes);
+  normalized.lane=textVal(normalized.lane)||'local';
+  normalized.priority=safePriority(normalized.priority);
   return normalized;
+}
+function normalizeMatchHistoryEntries(entries){
+  return (Array.isArray(entries)?entries:[]).map(entry=>{
+    const normalizedResult=normalizeMatchResult(entry?.result||entry);
+    return {
+      ...entry,
+      company_name:textVal(entry?.company_name||normalizedResult?.company_name),
+      input:textVal(entry?.input),
+      score:normalizeMatchScore(entry?.score ?? normalizedResult?.match_score),
+      level:textVal(entry?.level || normalizedResult?.match_level),
+      result:normalizedResult
+    };
+  }).filter(entry=>entry.result&&entry.company_name);
 }
 function extractJobTitles(raw){
   const parsed=parseJSON(raw,'{');
@@ -1270,7 +1308,7 @@ function matchBand(score){
   return {tone:'moderate',label:'Moderate',ring:'sc-lo-ring',color:'#ef4444',chip:'match-chip-moderate'};
 }
 async function saveMatchState(){
-  try{await storage.set('match-hist-v3',JSON.stringify(matchHistory));}catch{}
+  try{await storage.set('match-hist-v3',JSON.stringify(normalizeMatchHistoryEntries(matchHistory)));}catch{}
   try{await storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
   try{await storage.set('match-job-titles',JSON.stringify(matchJobTitles));}catch{}
 }
@@ -1328,39 +1366,45 @@ function loadCachedMatch(i){
 }
 function renderMatchHist(){
   const el=document.getElementById('match-hist');
-  if(!matchHistory.length){
+  try{
+    matchHistory=normalizeMatchHistoryEntries(matchHistory);
+    if(!matchHistory.length){
+      el.innerHTML=`<div class="match-hist-wrap">
+        <div class="match-hist-head">
+          <span class="box-label">Saved skill match results</span>
+          <span class="match-hint">Analyze a company and your result cards will stay here for later drafting.</span>
+        </div>
+        <div class="match-empty">
+          <div class="match-empty-title">No result cards yet</div>
+          <div>Run a company or website analysis above and the result will appear here as a saved card with score, fit details, outreach context, and target job titles.</div>
+          <div class="match-empty-note">Tip: use the quick chips to test the workflow fast, then save your best-fit organizations for drafting.</div>
+        </div>
+      </div>`;
+      return;
+    }
+    const sorted=[...matchHistory].sort((a,b)=>(b.score||0)-(a.score||0));
     el.innerHTML=`<div class="match-hist-wrap">
       <div class="match-hist-head">
-        <span class="box-label">Saved skill match results</span>
-        <span class="match-hint">Analyze a company and your result cards will stay here for later drafting.</span>
+        <div class="match-head-actions">
+          <span class="box-label">Saved skill match results</span>
+          <span class="match-hint">Sorted by highest match. Use expand/collapse on each card.</span>
+        </div>
+        <div class="match-tools">
+          <button class="match-mini-btn" onclick="setAllMatchCards(true)">Expand all</button>
+          <button class="match-mini-btn" onclick="setAllMatchCards(false)">Collapse all</button>
+        </div>
       </div>
-      <div class="match-empty">
-        <div class="match-empty-title">No result cards yet</div>
-        <div>Run a company or website analysis above and the result will appear here as a saved card with score, fit details, outreach context, and target job titles.</div>
-        <div class="match-empty-note">Tip: use the quick chips to test the workflow fast, then save your best-fit organizations for drafting.</div>
-      </div>
+      <div class="chips">${sorted.map((h)=>{
+        const band=matchBand(h.score);
+        const score=normalizeMatchScore(h.score);
+        return `<span class="chip" onclick="openMatchByName('${String(h.company_name).replace(/'/g,"\\'")}')">${h.company_name} <span class="match-chip-score">${score}/100</span><span class="match-chip-label ${band.chip}">${band.label}</span></span>`;
+      }).join('')}</div>
+      <div class="match-grid">${sorted.map(h=>renderMatchCard(h.result||h, h.input||'', !!matchCollapsed[h.company_name])).join('')}</div>
     </div>`;
-    return;
+  }catch(e){
+    console.error('Skill Match render failed:',e);
+    el.innerHTML=`<div class="err-box"><strong>⚠️ Error:</strong> Saved Skill Match data was inconsistent, so the app skipped rendering it this time. Run the analysis again and the result cards will rebuild safely.</div>`;
   }
-  const sorted=[...matchHistory].sort((a,b)=>(b.score||0)-(a.score||0));
-  el.innerHTML=`<div class="match-hist-wrap">
-    <div class="match-hist-head">
-      <div class="match-head-actions">
-        <span class="box-label">Saved skill match results</span>
-        <span class="match-hint">Sorted by highest match. Use expand/collapse on each card.</span>
-      </div>
-      <div class="match-tools">
-        <button class="match-mini-btn" onclick="setAllMatchCards(true)">Expand all</button>
-        <button class="match-mini-btn" onclick="setAllMatchCards(false)">Collapse all</button>
-      </div>
-    </div>
-    <div class="chips">${sorted.map((h)=>{
-      const band=matchBand(h.score);
-      const score=normalizeMatchScore(h.score);
-      return `<span class="chip" onclick="openMatchByName('${String(h.company_name).replace(/'/g,"\\'")}')">${h.company_name} <span class="match-chip-score">${score}/100</span><span class="match-chip-label ${band.chip}">${band.label}</span></span>`;
-    }).join('')}</div>
-    <div class="match-grid">${sorted.map(h=>renderMatchCard(h.result||h, h.input||'', !!matchCollapsed[h.company_name])).join('')}</div>
-  </div>`;
 }
 function setAllMatchCards(expand=true){
   matchHistory.forEach(h=>{matchCollapsed[h.company_name]=!expand;});
@@ -1405,6 +1449,11 @@ function getMatchByName(name){
 }
 function renderMatchCard(r,input='',collapsed=false){
   r=normalizeMatchResult(r);
+  const matchedSkills=toList(r?.matched_skills);
+  const transferableSkills=toList(r?.transferable_skills);
+  const skillGaps=toList(r?.skill_gaps);
+  const recommendedRoles=toList(r?.recommended_roles);
+  const talkingPoints=toList(r?.key_talking_points);
   const s=normalizeMatchScore(r.match_score);
   const band=matchBand(s);
   const already=orgs.some(o=>o.name===r.company_name);
@@ -1412,7 +1461,7 @@ function renderMatchCard(r,input='',collapsed=false){
   const companyName=String(r.company_name).replace(/'/g,"\\'");
   const summary=(r.approach_strategy||r.company_overview||'').slice(0,210);
   const generatedTitles=((r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[])).slice(0,8);
-  const roles=((r.recommended_roles||[]).length?r.recommended_roles:generatedTitles).slice(0,8);
+  const roles=(recommendedRoles.length?recommendedRoles:generatedTitles).slice(0,8);
   return `
     <div class="match-result" id="match-card-${slug}">
       <div class="match-head ${collapsed?'is-collapsed':''}">
@@ -1438,12 +1487,12 @@ function renderMatchCard(r,input='',collapsed=false){
       ${collapsed?'':`<div class="match-body">
         <div class="ms"><div class="ms-title">About</div><div class="ms-box">${r.company_overview||''}</div></div>
         <div class="ms"><div class="ms-title">📌 Match summary</div><div class="ms-box green">${s}/100 · ${r.match_level||band.label} · ${band.label}. ${r.approach_strategy||'Strong enough to start tailored outreach based on the fit signals below.'}</div></div>
-        <div class="ms"><div class="ms-title">✅ Skills that match</div><div class="skill-tags">${toList(r.matched_skills).map(x=>`<span class="sk sk-y">${x}</span>`).join('')}</div></div>
-        ${toList(r.transferable_skills).length?`<div class="ms"><div class="ms-title">🔄 Transferable</div><div class="skill-tags">${toList(r.transferable_skills).map(x=>`<span class="sk sk-t">${x}</span>`).join('')}</div></div>`:''}
-        ${toList(r.skill_gaps).length?`<div class="ms"><div class="ms-title">⚠️ Gaps</div><div class="skill-tags">${toList(r.skill_gaps).map(x=>`<span class="sk sk-n">${x}</span>`).join('')}</div></div>`:''}
+        <div class="ms"><div class="ms-title">✅ Skills that match</div><div class="skill-tags">${matchedSkills.map(x=>`<span class="sk sk-y">${x}</span>`).join('')}</div></div>
+        ${transferableSkills.length?`<div class="ms"><div class="ms-title">🔄 Transferable</div><div class="skill-tags">${transferableSkills.map(x=>`<span class="sk sk-t">${x}</span>`).join('')}</div></div>`:''}
+        ${skillGaps.length?`<div class="ms"><div class="ms-title">⚠️ Gaps</div><div class="skill-tags">${skillGaps.map(x=>`<span class="sk sk-n">${x}</span>`).join('')}</div></div>`:''}
         <div class="ms"><div class="ms-title">🎯 Recommended roles</div><div class="role-list">${roles.map(x=>`<span class="role-tag">${x}</span>`).join('')}</div></div>
         <div class="ms"><div class="ms-title">🧭 Potential job titles to target</div>${generatedTitles.length?`<div class="job-title-list">${generatedTitles.map(x=>`<span class="job-title-tag">${x}</span>`).join('')}</div>`:`<div class="ms-box">Use <strong>Generate job titles</strong> to create application-ready titles tailored to this organization.</div>`}</div>
-        <div class="ms"><div class="ms-title">💬 Key talking points</div><ul class="tp-list">${toList(r.key_talking_points).map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        <div class="ms"><div class="ms-title">💬 Key talking points</div><ul class="tp-list">${talkingPoints.map(x=>`<li>${x}</li>`).join('')}</ul></div>
         <div class="ms"><div class="ms-title">🗺 Approach strategy</div><div class="ms-box yellow">${r.approach_strategy||''}</div></div>
         ${r.notes?`<div class="ms"><div class="ms-title">🔎 Intel</div><div class="ms-box">${r.notes}</div></div>`:''}
       </div>`}
