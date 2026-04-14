@@ -66,6 +66,14 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .fbtn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .add-btn{margin-left:auto;padding:9px 16px;background:var(--brand);color:#fff;border:none;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(26,115,232,.3)}
 .t-list{padding:0 24px 24px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;align-items:start}
+.tracker-section{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:6px;padding:2px 2px 0}
+.tracker-section:first-child{margin-top:0}
+.tracker-section-title{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:800;color:#1f2937;letter-spacing:-.01em}
+.tracker-section-dot{width:10px;height:10px;border-radius:50%}
+.tracker-section-dot.p1{background:#ef4444}
+.tracker-section-dot.p2{background:#f59e0b}
+.tracker-section-dot.p3{background:#1a73e8}
+.tracker-section-meta{font-size:11px;color:#6b7280;font-weight:600}
 .tc{background:var(--surface);border-radius:24px;border:1px solid var(--line);overflow:hidden;box-shadow:var(--shadow)}
 .tc:hover{box-shadow:0 10px 28px rgba(16,24,40,.08)}
 .tc-top{padding:18px 20px 10px;display:flex;gap:14px;align-items:flex-start}
@@ -85,6 +93,15 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .upd{font-size:10px;color:#9ca3af}
 .tc-contact{padding:0 20px 10px 60px;font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
 .tc-contact a{color:var(--brand)}
+.tc-match{padding:0 20px 10px 60px}
+.tc-match-box{padding:12px 14px;border-radius:16px;background:linear-gradient(180deg,#f8fbff 0,#eef5ff 100%);border:1px solid #d8e4fb}
+.tc-match-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.tc-match-title{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#174ea6}
+.tc-match-score{padding:5px 10px;border-radius:999px;font-size:11px;font-weight:800}
+.tc-match-excellent{background:#dcfce7;color:#166534}
+.tc-match-strong{background:#fef3c7;color:#92400e}
+.tc-match-moderate{background:#fee2e2;color:#991b1b}
+.tc-match-text{font-size:12px;color:#35506b;line-height:1.6}
 .tc-notes{padding:0 20px 10px 60px}
 .ni{width:100%;font-size:13px;color:#374151;border:1px solid var(--line);border-radius:14px;padding:10px 12px;resize:vertical;font-family:inherit;min-height:72px;background:var(--surface-alt)}
 .ni:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(26,115,232,.12)}
@@ -1007,6 +1024,19 @@ function textVal(v){
 function safePriority(v){const n=parseInt(v,10);return [1,2,3].includes(n)?n:2;}
 function safeStatus(v){return STATUSES.includes(v)?v:'not_started';}
 function safeHref(v){const t=textVal(v).trim();if(!t)return'';return /^https?:\/\//i.test(t)?t:`https://${t}`;}
+function priorityMeta(priority){
+  return priority===1
+    ? {title:'High Priority',note:'Best immediate outreach targets',dot:'p1'}
+    : priority===2
+      ? {title:'Medium Priority',note:'Strong follow-up and adjacent-fit leads',dot:'p2'}
+      : {title:'Watch List',note:'Worth monitoring or warming up later',dot:'p3'};
+}
+function matchTone(score){
+  const n=Number(score)||0;
+  if(n>=85)return {label:'Excellent',cls:'tc-match-excellent'};
+  if(n>=70)return {label:'Strong',cls:'tc-match-strong'};
+  return {label:'Moderate',cls:'tc-match-moderate'};
+}
 const DT={};function debounce(fn,d,k){return()=>{clearTimeout(DT[k]);DT[k]=setTimeout(fn,d);};}
 function render(){renderStats();renderList();}
 function renderStats(){
@@ -1024,11 +1054,23 @@ function renderList(){
   const el=document.getElementById('list');
   if(!filtered.length){el.innerHTML='<div class="empty-box tracker-empty">No organizations match this filter.</div>';return;}
   const updatedAtValue=o=>Date.parse(textVal(o.updatedAt))||0;
-  el.innerHTML=[...filtered].sort((a,b)=>
+  const sorted=[...filtered].sort((a,b)=>
     safePriority(a.priority)-safePriority(b.priority)||
     updatedAtValue(b)-updatedAtValue(a)||
     textVal(a.name).localeCompare(textVal(b.name))
-  ).map(o=>{
+  );
+  const grouped={1:[],2:[],3:[]};
+  sorted.forEach(o=>grouped[safePriority(o.priority)].push(o));
+  el.innerHTML=[1,2,3].flatMap(priority=>{
+    const items=grouped[priority];
+    if(!items.length)return [];
+    const meta=priorityMeta(priority);
+    return [
+      `<div class="tracker-section">
+        <div class="tracker-section-title"><span class="tracker-section-dot ${meta.dot}"></span>${meta.title}</div>
+        <div class="tracker-section-meta">${items.length} ${items.length===1?'card':'cards'} · ${meta.note}</div>
+      </div>`,
+      ...items.map(o=>{
     const priority=safePriority(o.priority);
     const status=safeStatus(o.status);
     const name=textVal(o.name)||'Untitled organization';
@@ -1038,6 +1080,10 @@ function renderList(){
     const website=textVal(o.website);
     const href=safeHref(website);
     const notes=textVal(o.notes);
+    const matchScore=Number(o.matchScore);
+    const matchLevel=textVal(o.matchLevel);
+    const matchSummary=textVal(o.matchSummary);
+    const tone=matchTone(matchScore);
     return `
     <div class="tc">
       <div class="tc-top">
@@ -1054,13 +1100,24 @@ function renderList(){
         <div class="card-tools"><button class="icon-btn" onclick="removeOrg('${o.id}')">Remove</button></div>
       </div>
       ${(contact||website)?`<div class="tc-contact">${contact?`<span>${contact}</span>`:''}${website?`<span><a href="${href}" target="_blank">${website}</a></span>`:''}</div>`:''}
+      ${matchScore?`<div class="tc-match">
+        <div class="tc-match-box">
+          <div class="tc-match-head">
+            <div class="tc-match-title">Skill Match Snapshot</div>
+            <div class="tc-match-score ${tone.cls}">${matchScore}/100${matchLevel?` · ${matchLevel}`:''}${tone.label?` · ${tone.label}`:''}</div>
+          </div>
+          <div class="tc-match-text">${matchSummary||'Saved from Skill Match for easier drafting context.'}</div>
+        </div>
+      </div>`:''}
       <div class="tc-notes"><textarea class="ni" placeholder="Notes..." oninput="updateNote('${o.id}',this.value)">${notes}</textarea></div>
       <div class="tc-actions">
         <button class="ai-btn ai-btn-email" onclick="openAI('${o.id}','email')">✉ Draft Email</button>
         <button class="ai-btn ai-btn-cover" onclick="openAI('${o.id}','cover')">📄 Cover Letter</button>
         <button class="ai-btn ai-btn-remove" onclick="removeOrg('${o.id}')">Remove Card</button>
       </div>
-    </div>`;}).join('');
+    </div>`;})
+    ];
+  }).join('');
 }
 
 // ─────────────────────────────────────────────────
@@ -1234,7 +1291,22 @@ function addMatchToTracker(name=''){
   const r=name?getMatchByName(name):curMatch;
   if(!r)return;
   curMatch=r;
-  orgs.push({id:'m'+Date.now(),name:r.company_name,location:r.location||'',type:r.company_type||'',lane:r.lane||'local',priority:r.priority||2,contact:r.contact||'',website:r.website||'',notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(r.recommended_roles?'\n\nTarget roles: '+r.recommended_roles.join(', '):''),status:'not_started',updatedAt:null});
+  orgs.push({
+    id:'m'+Date.now(),
+    name:r.company_name,
+    location:r.location||'',
+    type:r.company_type||'',
+    lane:r.lane||'local',
+    priority:r.priority||2,
+    contact:r.contact||'',
+    website:r.website||'',
+    matchScore:r.match_score||'',
+    matchLevel:r.match_level||'',
+    matchSummary:r.approach_strategy||'',
+    notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(r.recommended_roles?'\n\nTarget roles: '+r.recommended_roles.join(', '):''),
+    status:'not_started',
+    updatedAt:null
+  });
   saveOrgs();
   renderMatchHist();
   const btn=document.getElementById(`m-add-${slugify(r.company_name)}`);
