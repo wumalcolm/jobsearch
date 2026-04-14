@@ -185,6 +185,18 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .match-hist-wrap{display:flex;flex-direction:column;gap:14px}
 .match-hist-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px}
 .match-hint{font-size:12px;color:#6b7280}
+.match-head-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.match-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.match-empty{background:#fff;border:1px dashed #cbd5e1;border-radius:18px;padding:24px 20px;color:#475569;line-height:1.7}
+.match-empty-title{font-size:15px;font-weight:700;color:#1f2937;margin-bottom:6px}
+.match-empty-note{font-size:12px;color:#64748b}
+.match-mini-btn{padding:8px 12px;border:1.5px solid #d1d5db;border-radius:999px;background:#fff;color:#374151;font-size:11px;font-weight:700;cursor:pointer}
+.match-mini-btn:hover{background:#f8fafc}
+.match-chip-score{opacity:.7;font-weight:700}
+.match-chip-label{margin-left:6px;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.03em;text-transform:uppercase}
+.match-chip-excellent{background:#dcfce7;color:#166534}
+.match-chip-strong{background:#fef3c7;color:#92400e}
+.match-chip-moderate{background:#fee2e2;color:#991b1b}
 .score-ring{text-align:center;flex-shrink:0}
 .score-circle{width:62px;height:62px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;font-weight:700;border:3px solid}
 .sc-hi-ring{border-color:#10b981;background:#ecfdf5;color:#065f46}
@@ -198,11 +210,14 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .ms-title{font-size:11px;font-weight:700;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px}
 .ms-box{font-size:12px;color:#374151;line-height:1.6;padding:9px 11px;background:#f8fafc;border-radius:7px}
 .ms-box.yellow{background:#fef9ec;border-left:3px solid #f59e0b}
+.ms-box.green{background:#ecfdf5;border-left:3px solid #10b981}
 .skill-tags{display:flex;flex-wrap:wrap;gap:5px}
 .sk{font-size:11px;font-weight:600;padding:3px 9px;border-radius:99px}
 .sk-y{background:#d1fae5;color:#065f46}.sk-n{background:#fee2e2;color:#991b1b}.sk-t{background:#fef3c7;color:#78350f}
 .role-list{display:flex;flex-wrap:wrap;gap:6px}
 .role-tag{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;background:#ede9fe;color:#4c1d95}
+.job-title-list{display:flex;flex-wrap:wrap;gap:7px}
+.job-title-tag{font-size:11px;font-weight:700;padding:5px 10px;border-radius:999px;background:#eef6ff;color:#174ea6;border:1px solid #d8e4fb}
 .tp-list{list-style:none;display:flex;flex-direction:column;gap:5px}
 .tp-list li{font-size:12px;color:#374151;padding:6px 9px;background:#f0f9ff;border-radius:6px;border-left:3px solid #0DB5B5;line-height:1.5}
 /* DISCOVER */
@@ -816,7 +831,7 @@ const PLATFORM_PROMPTS={
 // ─────────────────────────────────────────────────
 let orgs=[], currentFilter='all', addedIds=new Set();
 let aiState={orgId:null,type:'email',eText:'',cText:'',instructions:''};
-let matchHistory=[], curMatch=null, selChipQ='', matchCollapsed={};
+let matchHistory=[], curMatch=null, selChipQ='', matchCollapsed={}, matchJobTitles={};
 let cvData=JSON.parse(JSON.stringify(DEFAULT_CV)), platformStatus={}, geminiApiKey='';
 const exportCache={};
 
@@ -855,6 +870,7 @@ async function load(){
   try{const a=await storage.get('added-ids');if(a&&a.value)addedIds=new Set(JSON.parse(a.value));}catch{}
   try{const h=await storage.get('match-hist-v3');if(h&&h.value)matchHistory=JSON.parse(h.value);}catch{}
   try{const mc=await storage.get('match-collapsed');if(mc&&mc.value)matchCollapsed=JSON.parse(mc.value);}catch{}
+  try{const mj=await storage.get('match-job-titles');if(mj&&mj.value)matchJobTitles=JSON.parse(mj.value);}catch{}
   try{const c=await storage.get('cv-data');if(c&&c.value)cvData={...DEFAULT_CV,...JSON.parse(c.value)};}catch{}
   let profileVersion='';
   try{const pv=await storage.get('cv-profile-sync-version');if(pv&&pv.value)profileVersion=pv.value;}catch{}
@@ -1164,6 +1180,21 @@ function addRec(r,tid){
 // SKILL MATCH
 // ─────────────────────────────────────────────────
 function setMI(v){document.getElementById('match-in').value=v;}
+function normalizeMatchScore(value){
+  const n=Number(value);
+  return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):0;
+}
+function matchBand(score){
+  const s=normalizeMatchScore(score);
+  if(s>=85)return {tone:'excellent',label:'Excellent',ring:'sc-hi-ring',color:'#10b981',chip:'match-chip-excellent'};
+  if(s>=70)return {tone:'strong',label:'Strong',ring:'sc-mid-ring',color:'#f59e0b',chip:'match-chip-strong'};
+  return {tone:'moderate',label:'Moderate',ring:'sc-lo-ring',color:'#ef4444',chip:'match-chip-moderate'};
+}
+async function saveMatchState(){
+  try{await storage.set('match-hist-v3',JSON.stringify(matchHistory));}catch{}
+  try{await storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
+  try{await storage.set('match-job-titles',JSON.stringify(matchJobTitles));}catch{}
+}
 async function runMatch(){
   const input=document.getElementById('match-in').value.trim();if(!input)return;
   const btn=document.getElementById('match-btn');btn.disabled=true;btn.textContent='Analyzing…';
@@ -1178,11 +1209,12 @@ async function runMatch(){
       structurePrompt:'Return one JSON object with keys: company_name, company_overview, company_type, location, website, contact, match_score, match_level, matched_skills, skill_gaps, transferable_skills, recommended_roles, key_talking_points, approach_strategy, lane, priority, notes'
     });
     if(!result){showErr('match-result','Could not parse result. Please try again.');btn.disabled=false;btn.textContent='Analyze';return;}
+    result.match_score=normalizeMatchScore(result.match_score);
+    if(matchJobTitles[result.company_name]?.length)result.generated_job_titles=[...matchJobTitles[result.company_name]];
     curMatch=result;
     matchCollapsed[result.company_name]=false;
     matchHistory=[{company_name:result.company_name,input,score:result.match_score,level:result.match_level,result},...matchHistory.filter(h=>h.company_name!==result.company_name)].slice(0,12);
-    try{await storage.set('match-hist-v3',JSON.stringify(matchHistory));}catch{}
-    try{await storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
+    await saveMatchState();
     document.getElementById('match-result').innerHTML='';
     renderMatchHist();
   }catch(e){showErr('match-result',e.message);console.error(e);}
@@ -1202,16 +1234,44 @@ function loadCachedMatch(i){
 }
 function renderMatchHist(){
   const el=document.getElementById('match-hist');
-  if(!matchHistory.length){el.innerHTML='';return;}
+  if(!matchHistory.length){
+    el.innerHTML=`<div class="match-hist-wrap">
+      <div class="match-hist-head">
+        <span class="box-label">Saved skill match results</span>
+        <span class="match-hint">Analyze a company and your result cards will stay here for later drafting.</span>
+      </div>
+      <div class="match-empty">
+        <div class="match-empty-title">No result cards yet</div>
+        <div>Run a company or website analysis above and the result will appear here as a saved card with score, fit details, outreach context, and target job titles.</div>
+        <div class="match-empty-note">Tip: use the quick chips to test the workflow fast, then save your best-fit organizations for drafting.</div>
+      </div>
+    </div>`;
+    return;
+  }
   const sorted=[...matchHistory].sort((a,b)=>(b.score||0)-(a.score||0));
   el.innerHTML=`<div class="match-hist-wrap">
     <div class="match-hist-head">
-      <span class="box-label">Saved skill match results</span>
-      <span class="match-hint">Sorted by highest match. Use expand/collapse on each card.</span>
+      <div class="match-head-actions">
+        <span class="box-label">Saved skill match results</span>
+        <span class="match-hint">Sorted by highest match. Use expand/collapse on each card.</span>
+      </div>
+      <div class="match-tools">
+        <button class="match-mini-btn" onclick="setAllMatchCards(true)">Expand all</button>
+        <button class="match-mini-btn" onclick="setAllMatchCards(false)">Collapse all</button>
+      </div>
     </div>
-    <div class="chips">${sorted.map((h)=>`<span class="chip" onclick="openMatchByName('${String(h.company_name).replace(/'/g,"\\'")}')">${h.company_name} <span style="opacity:.6">${h.score}/100</span></span>`).join('')}</div>
+    <div class="chips">${sorted.map((h)=>{
+      const band=matchBand(h.score);
+      const score=normalizeMatchScore(h.score);
+      return `<span class="chip" onclick="openMatchByName('${String(h.company_name).replace(/'/g,"\\'")}')">${h.company_name} <span class="match-chip-score">${score}/100</span><span class="match-chip-label ${band.chip}">${band.label}</span></span>`;
+    }).join('')}</div>
     <div class="match-grid">${sorted.map(h=>renderMatchCard(h.result||h, h.input||'', !!matchCollapsed[h.company_name])).join('')}</div>
   </div>`;
+}
+function setAllMatchCards(expand=true){
+  matchHistory.forEach(h=>{matchCollapsed[h.company_name]=!expand;});
+  saveMatchState();
+  renderMatchHist();
 }
 function slugify(text){
   return String(text||'').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
@@ -1237,9 +1297,9 @@ function removeMatch(name){
   if(!confirm(`Remove "${name}" from saved skill match results?`))return;
   matchHistory=matchHistory.filter(x=>x.company_name!==name);
   delete matchCollapsed[name];
+  delete matchJobTitles[name];
   if(curMatch&&curMatch.company_name===name)curMatch=null;
-  try{storage.set('match-hist-v3',JSON.stringify(matchHistory));}catch{}
-  try{storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
+  saveMatchState();
   renderMatchHist();
 }
 function getMatchByName(name){
@@ -1247,13 +1307,14 @@ function getMatchByName(name){
   return h&&h.result?h.result:null;
 }
 function renderMatchCard(r,input='',collapsed=false){
-  const s=r.match_score||0;
-  const sc=s>=75?'sc-hi-ring':s>=50?'sc-mid-ring':'sc-lo-ring';
-  const lc=s>=75?'#10b981':s>=50?'#f59e0b':'#ef4444';
+  const s=normalizeMatchScore(r.match_score);
+  const band=matchBand(s);
   const already=orgs.some(o=>o.name===r.company_name);
   const slug=slugify(r.company_name);
   const companyName=String(r.company_name).replace(/'/g,"\\'");
   const summary=(r.approach_strategy||r.company_overview||'').slice(0,210);
+  const generatedTitles=(r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[]).slice(0,8);
+  const roles=((r.recommended_roles||[]).length?r.recommended_roles:generatedTitles).slice(0,8);
   return `
     <div class="match-result" id="match-card-${slug}">
       <div class="match-head ${collapsed?'is-collapsed':''}">
@@ -1265,32 +1326,69 @@ function renderMatchCard(r,input='',collapsed=false){
             <button id="m-add-${slug}" onclick="addMatchToTracker('${companyName}')" ${already?'disabled':''} style="padding:8px 16px;background:${already?'#d1fae5':'#0DB5B5'};color:${already?'#065f46':'#fff'};border:none;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer">${already?'✓ Already in Tracker':'➕ Add to Tracker'}</button>
             <button onclick="openAIFromMatch('${companyName}')" style="padding:8px 14px;background:#f5f3ff;border:1.5px solid #c4b5fd;color:#5b21b6;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">✉ Draft outreach</button>
             ${r.website?`<a href="https://${r.website.replace(/^https?:\/\//,'')}" target="_blank" style="padding:8px 14px;border:1.5px solid #d1d5db;border-radius:8px;font-size:12px;font-weight:600;color:#374151;text-decoration:none;background:#fff">🌐 Visit website</a>`:''}
+            <button class="match-collapse" id="m-titles-${slug}" onclick="generateJobTitles('${companyName}')">${generatedTitles.length?'Refresh job titles':'Generate job titles'}</button>
             <button class="match-collapse" onclick="toggleMatchCard('${companyName}')">${collapsed?'Expand result':'Collapse result'}</button>
             <button class="match-collapse" onclick="removeMatch('${companyName}')" style="border-color:#fecaca;color:#b91c1c;background:#fff7f7">Remove</button>
           </div>
           ${collapsed&&summary?`<div class="match-summary">${summary}${summary.length>=210?'…':''}</div>`:''}
         </div>
         <div class="score-ring">
-          <div class="score-circle ${sc}"><span class="score-num">${s}</span><span class="score-pct">/100</span></div>
-          <div class="match-level" style="color:${lc}">${r.match_level||''}</div>
+          <div class="score-circle ${band.ring}"><span class="score-num">${s}</span><span class="score-pct">/100</span></div>
+          <div class="match-level" style="color:${band.color}">${r.match_level||band.label}</div>
         </div>
       </div>
       ${collapsed?'':`<div class="match-body">
         <div class="ms"><div class="ms-title">About</div><div class="ms-box">${r.company_overview||''}</div></div>
+        <div class="ms"><div class="ms-title">📌 Match summary</div><div class="ms-box green">${s}/100 · ${r.match_level||band.label} · ${band.label}. ${r.approach_strategy||'Strong enough to start tailored outreach based on the fit signals below.'}</div></div>
         <div class="ms"><div class="ms-title">✅ Skills that match</div><div class="skill-tags">${(r.matched_skills||[]).map(x=>`<span class="sk sk-y">${x}</span>`).join('')}</div></div>
         ${(r.transferable_skills||[]).length?`<div class="ms"><div class="ms-title">🔄 Transferable</div><div class="skill-tags">${r.transferable_skills.map(x=>`<span class="sk sk-t">${x}</span>`).join('')}</div></div>`:''}
         ${(r.skill_gaps||[]).length?`<div class="ms"><div class="ms-title">⚠️ Gaps</div><div class="skill-tags">${r.skill_gaps.map(x=>`<span class="sk sk-n">${x}</span>`).join('')}</div></div>`:''}
-        <div class="ms"><div class="ms-title">🎯 Recommended roles</div><div class="role-list">${(r.recommended_roles||[]).map(x=>`<span class="role-tag">${x}</span>`).join('')}</div></div>
+        <div class="ms"><div class="ms-title">🎯 Recommended roles</div><div class="role-list">${roles.map(x=>`<span class="role-tag">${x}</span>`).join('')}</div></div>
+        <div class="ms"><div class="ms-title">🧭 Potential job titles to target</div>${generatedTitles.length?`<div class="job-title-list">${generatedTitles.map(x=>`<span class="job-title-tag">${x}</span>`).join('')}</div>`:`<div class="ms-box">Use <strong>Generate job titles</strong> to create application-ready titles tailored to this organization.</div>`}</div>
         <div class="ms"><div class="ms-title">💬 Key talking points</div><ul class="tp-list">${(r.key_talking_points||[]).map(x=>`<li>${x}</li>`).join('')}</ul></div>
         <div class="ms"><div class="ms-title">🗺 Approach strategy</div><div class="ms-box yellow">${r.approach_strategy||''}</div></div>
         ${r.notes?`<div class="ms"><div class="ms-title">🔎 Intel</div><div class="ms-box">${r.notes}</div></div>`:''}
       </div>`}
     </div>`;
 }
+async function generateJobTitles(name=''){
+  const r=name?getMatchByName(name):curMatch;
+  if(!r)return;
+  const slug=slugify(r.company_name);
+  const btn=document.getElementById(`m-titles-${slug}`);
+  if(btn){btn.disabled=true;btn.textContent='Generating…';}
+  try{
+    const raw=await callGemini({
+      maxTokens:700,
+      expectJson:true,
+      system:'Return valid JSON only.',
+      userMsg:`Generate 6 concise, realistic job titles Malcolm Wu could target for this organization. Prefer titles he can plausibly apply for now or through adjacent-fit positioning. Avoid generic filler and avoid repeating the exact same title.\n\nMalcolm profile:\n${MALCOLM}\n\nOrganization:\nName: ${r.company_name}\nType: ${r.company_type||''}\nLocation: ${r.location||''}\nOverview: ${r.company_overview||''}\nMatched skills: ${(r.matched_skills||[]).join(', ')}\nTransferable skills: ${(r.transferable_skills||[]).join(', ')}\nSkill gaps: ${(r.skill_gaps||[]).join(', ')}\nCurrent recommended roles: ${(r.recommended_roles||[]).join(', ')}\nApproach strategy: ${r.approach_strategy||''}\n\nReturn one JSON object: {"titles":["title 1","title 2","title 3"]}`
+    });
+    const parsed=parseJSON(raw,'{');
+    const titles=(parsed?.titles||[]).map(textVal).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,8);
+    if(!titles.length)throw new Error('Could not generate job titles right now. Please try again.');
+    matchJobTitles[r.company_name]=titles;
+    const h=matchHistory.find(x=>x.company_name===r.company_name);
+    if(h&&h.result)h.result.generated_job_titles=[...titles];
+    if(curMatch&&curMatch.company_name===r.company_name)curMatch.generated_job_titles=[...titles];
+    await saveMatchState();
+    renderMatchHist();
+    const card=document.getElementById(`match-card-${slug}`);
+    if(card)card.scrollIntoView({behavior:'smooth',block:'start'});
+    showToast('Job titles generated');
+  }catch(e){
+    showToast('Could not generate job titles');
+    alert(e.message);
+  }finally{
+    const activeBtn=document.getElementById(`m-titles-${slug}`);
+    if(activeBtn){activeBtn.disabled=false;activeBtn.textContent=(matchJobTitles[r.company_name]?.length?'Refresh job titles':'Generate job titles');}
+  }
+}
 function addMatchToTracker(name=''){
   const r=name?getMatchByName(name):curMatch;
   if(!r)return;
   curMatch=r;
+  const generatedTitles=(r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[]).slice(0,8);
   orgs.push({
     id:'m'+Date.now(),
     name:r.company_name,
@@ -1303,7 +1401,7 @@ function addMatchToTracker(name=''){
     matchScore:r.match_score||'',
     matchLevel:r.match_level||'',
     matchSummary:r.approach_strategy||'',
-    notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(r.recommended_roles?'\n\nTarget roles: '+r.recommended_roles.join(', '):''),
+    notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(r.recommended_roles?'\n\nTarget roles: '+r.recommended_roles.join(', '):'')+(generatedTitles.length?'\n\nGenerated titles: '+generatedTitles.join(', '):''),
     status:'not_started',
     updatedAt:null
   });
@@ -1316,7 +1414,8 @@ function openAIFromMatch(name=''){
   const r=name?getMatchByName(name):curMatch;
   if(!r)return;
   curMatch=r;
-  const t={id:'_mtmp',name:r.company_name,location:r.location,type:r.company_type,lane:r.lane||'local',contact:r.contact,notes:`Match: ${r.match_score}/100 — ${r.match_level}\nApproach: ${r.approach_strategy}\nTalking points: ${(r.key_talking_points||[]).join('; ')}\nTarget roles: ${(r.recommended_roles||[]).join(', ')}`};
+  const generatedTitles=(r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[]).slice(0,8);
+  const t={id:'_mtmp',name:r.company_name,location:r.location,type:r.company_type,lane:r.lane||'local',contact:r.contact,notes:`Match: ${normalizeMatchScore(r.match_score)}/100 — ${r.match_level||matchBand(r.match_score).label}\nApproach: ${r.approach_strategy}\nTalking points: ${(r.key_talking_points||[]).join('; ')}\nTarget roles: ${(r.recommended_roles||[]).join(', ')}${generatedTitles.length?`\nGenerated titles: ${generatedTitles.join(', ')}`:''}`};
   const ex=orgs.find(o=>o.id==='_mtmp');if(ex)Object.assign(ex,t);else orgs.push(t);
   openAI('_mtmp','email');
 }
