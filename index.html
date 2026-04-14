@@ -830,6 +830,7 @@ const PLATFORM_PROMPTS={
   reliefweb:{label:'ReliefWeb Profile',instruction:'Write a ReliefWeb profile (150-200 words). Emphasize program management, stakeholder coordination, community development.'},
   impactpool:{label:'Impactpool Professional Profile',instruction:'Write an Impactpool summary (180-220 words) for UN agencies, EU institutions, international development orgs.'},
 };
+const APP_UI_SYNC_VERSION='ui-sync-20260414';
 
 // ─────────────────────────────────────────────────
 // STATE
@@ -878,12 +879,21 @@ async function load(){
   try{const mj=await storage.get('match-job-titles');if(mj&&mj.value)matchJobTitles=JSON.parse(mj.value);}catch{}
   try{const c=await storage.get('cv-data');if(c&&c.value)cvData={...DEFAULT_CV,...JSON.parse(c.value)};}catch{}
   let profileVersion='';
+  let uiSyncVersion='';
   try{const pv=await storage.get('cv-profile-sync-version');if(pv&&pv.value)profileVersion=pv.value;}catch{}
+  try{const sv=await storage.get('app-ui-sync-version');if(sv&&sv.value)uiSyncVersion=sv.value;}catch{}
   const synced=syncCvDataFromWebsiteProfile(profileVersion!==WEBSITE_PROFILE_SYNC_VERSION);
+  syncTrackerAndMatchState();
   if(synced){
     try{
       await storage.set('cv-data',JSON.stringify(cvData));
       await storage.set('cv-profile-sync-version',WEBSITE_PROFILE_SYNC_VERSION);
+    }catch{}
+  }
+  if(uiSyncVersion!==APP_UI_SYNC_VERSION){
+    try{
+      await saveMatchState();
+      await storage.set('app-ui-sync-version',APP_UI_SYNC_VERSION);
     }catch{}
   }
   try{const p=await storage.get('plat-status');if(p&&p.value)platformStatus=JSON.parse(p.value);}catch{}
@@ -896,7 +906,29 @@ function mergeOrgs(defs,saved){
   const r=defs.map(d=>m[d.id]?{...d,status:m[d.id].status,notes:m[d.id].notes,updatedAt:m[d.id].updatedAt}:d);
   saved.forEach(s=>{if(!defs.find(d=>d.id===s.id))r.push(s);});return r;
 }
-async function saveOrgs(){try{await storage.set('orgs-v6',JSON.stringify(orgs));showToast('Saved');}catch{}}
+function findOrgByName(name=''){
+  const target=textVal(name).trim().toLowerCase();
+  if(!target)return null;
+  return orgs.find(o=>textVal(o.name).trim().toLowerCase()===target)||null;
+}
+function syncTrackerAndMatchState(){
+  matchHistory=matchHistory.map(h=>{
+    const result=h&&h.result?normalizeMatchResult(h.result):h.result;
+    return {
+      ...h,
+      score:normalizeMatchScore(h?.score ?? result?.match_score),
+      level:textVal(h?.level || result?.match_level),
+      result
+    };
+  });
+}
+async function saveOrgs(){
+  try{
+    await storage.set('orgs-v6',JSON.stringify(orgs));
+    renderMatchHist();
+    showToast('Saved');
+  }catch{}
+}
 function showToast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1400);}
 
 // ─────────────────────────────────────────────────
@@ -1001,6 +1033,8 @@ function showView(v){
   document.getElementById(v+'-view').classList.add('active');
   document.querySelectorAll('.nav-tab').forEach((t,i)=>t.classList.toggle('active',['tracker','discover','match','jobs','profile'][i]===v));
   if(v==='profile')renderExportGrid();
+  if(v==='match')renderMatchHist();
+  if(v==='tracker')renderList();
 }
 function showSub(id){
   document.querySelectorAll('#jobs-view .sub-section').forEach(s=>s.classList.remove('active'));
@@ -1028,12 +1062,12 @@ function removeOrg(id){
   const o=orgs.find(x=>x.id===id);if(!o)return;
   if(!confirm(`Remove "${textVal(o.name)||'this card'}" from the tracker?`))return;
   orgs=orgs.filter(x=>x.id!==id);
-  saveOrgs();renderList();renderStats();
+  saveOrgs();renderList();renderStats();renderMatchHist();
 }
 function updateNote(id,val){
   const o=orgs.find(x=>x.id===id);if(!o)return;o.notes=val;
   o.updatedAt=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-  debounce(()=>saveOrgs(),900,id)();
+  debounce(()=>{saveOrgs();renderMatchHist();},900,id)();
 }
 function textVal(v){
   if(v==null)return'';
@@ -1257,6 +1291,20 @@ async function runMatch(){
     const normalizedResult=normalizeMatchResult(result);
     if(matchJobTitles[normalizedResult.company_name]?.length)normalizedResult.generated_job_titles=[...matchJobTitles[normalizedResult.company_name]];
     curMatch=normalizedResult;
+    const existingOrg=findOrgByName(normalizedResult.company_name);
+    if(existingOrg){
+      existingOrg.location=normalizedResult.location||existingOrg.location;
+      existingOrg.type=normalizedResult.company_type||existingOrg.type;
+      existingOrg.contact=normalizedResult.contact||existingOrg.contact;
+      existingOrg.website=normalizedResult.website||existingOrg.website;
+      existingOrg.lane=normalizedResult.lane||existingOrg.lane;
+      existingOrg.priority=normalizedResult.priority||existingOrg.priority;
+      existingOrg.matchScore=normalizedResult.match_score||existingOrg.matchScore;
+      existingOrg.matchLevel=normalizedResult.match_level||existingOrg.matchLevel;
+      existingOrg.matchSummary=normalizedResult.approach_strategy||existingOrg.matchSummary;
+      existingOrg.updatedAt=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      await saveOrgs();
+    }
     matchCollapsed[normalizedResult.company_name]=false;
     matchHistory=[{company_name:normalizedResult.company_name,input,score:normalizedResult.match_score,level:normalizedResult.match_level,result:normalizedResult},...matchHistory.filter(h=>h.company_name!==normalizedResult.company_name)].slice(0,12);
     await saveMatchState();
@@ -1436,27 +1484,43 @@ function addMatchToTracker(name=''){
   const r=name?getMatchByName(name):curMatch;
   if(!r)return;
   curMatch=r;
-    const generatedTitles=(toList(r.generated_job_titles).length?toList(r.generated_job_titles):matchJobTitles[r.company_name]||[]).slice(0,8);
-  orgs.push({
-    id:'m'+Date.now(),
-    name:r.company_name,
-    location:r.location||'',
-    type:r.company_type||'',
-    lane:r.lane||'local',
-    priority:r.priority||2,
-    contact:r.contact||'',
-    website:r.website||'',
-    matchScore:r.match_score||'',
-    matchLevel:r.match_level||'',
-    matchSummary:r.approach_strategy||'',
-    notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(toList(r.recommended_roles).length?'\n\nTarget roles: '+toList(r.recommended_roles).join(', '):'')+(generatedTitles.length?'\n\nGenerated titles: '+generatedTitles.join(', '):''),
-    status:'not_started',
-    updatedAt:null
-  });
+  const generatedTitles=(toList(r.generated_job_titles).length?toList(r.generated_job_titles):matchJobTitles[r.company_name]||[]).slice(0,8);
+  const existingOrg=findOrgByName(r.company_name);
+  const mergedNotes=(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(toList(r.recommended_roles).length?'\n\nTarget roles: '+toList(r.recommended_roles).join(', '):'')+(generatedTitles.length?'\n\nGenerated titles: '+generatedTitles.join(', '):'');
+  if(existingOrg){
+    existingOrg.location=r.location||existingOrg.location;
+    existingOrg.type=r.company_type||existingOrg.type;
+    existingOrg.lane=r.lane||existingOrg.lane;
+    existingOrg.priority=r.priority||existingOrg.priority;
+    existingOrg.contact=r.contact||existingOrg.contact;
+    existingOrg.website=r.website||existingOrg.website;
+    existingOrg.matchScore=r.match_score||existingOrg.matchScore;
+    existingOrg.matchLevel=r.match_level||existingOrg.matchLevel;
+    existingOrg.matchSummary=r.approach_strategy||existingOrg.matchSummary;
+    existingOrg.notes=mergedNotes||existingOrg.notes;
+    existingOrg.updatedAt=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  }else{
+    orgs.push({
+      id:'m'+Date.now(),
+      name:r.company_name,
+      location:r.location||'',
+      type:r.company_type||'',
+      lane:r.lane||'local',
+      priority:r.priority||2,
+      contact:r.contact||'',
+      website:r.website||'',
+      matchScore:r.match_score||'',
+      matchLevel:r.match_level||'',
+      matchSummary:r.approach_strategy||'',
+      notes:mergedNotes,
+      status:'not_started',
+      updatedAt:null
+    });
+  }
   saveOrgs();
   renderMatchHist();
   const btn=document.getElementById(`m-add-${slugify(r.company_name)}`);
-  if(btn){btn.textContent='✓ Added to Tracker';btn.style.background='#d1fae5';btn.style.color='#065f46';btn.disabled=true;}
+  if(btn){btn.textContent='✓ Already in Tracker';btn.style.background='#d1fae5';btn.style.color='#065f46';btn.disabled=true;}
 }
 function openAIFromMatch(name=''){
   const r=name?getMatchByName(name):curMatch;
