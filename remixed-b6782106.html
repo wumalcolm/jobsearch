@@ -106,6 +106,12 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .tc-match-strong{background:#fef3c7;color:#92400e}
 .tc-match-moderate{background:#fee2e2;color:#991b1b}
 .tc-match-text{font-size:12px;color:#35506b;line-height:1.6}
+.tc-status-actions{padding:0 20px 10px 60px;display:flex;gap:8px;flex-wrap:wrap}
+.tracker-quick{padding:7px 11px;border-radius:999px;border:1px solid #d1d5db;background:#fff;color:#4b5563;font-size:11px;font-weight:700;cursor:pointer}
+.tracker-quick:hover{background:#f8fafc}
+.tracker-quick.active-sent{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+.tracker-quick.active-replied{background:#ecfdf5;border-color:#6ee7b7;color:#065f46}
+.tracker-quick.active-meeting{background:#f5f3ff;border-color:#c4b5fd;color:#5b21b6}
 .tc-notes{padding:0 20px 10px 60px}
 .ni{width:100%;font-size:13px;color:#374151;border:1px solid var(--line);border-radius:14px;padding:10px 12px;resize:vertical;font-family:inherit;min-height:72px;background:var(--surface-alt)}
 .ni:focus{outline:none;border-color:var(--brand);background:#fff;box-shadow:0 0 0 3px rgba(26,115,232,.12)}
@@ -1050,6 +1056,12 @@ function cycleStatus(id){
   o.updatedAt=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   saveOrgs();renderList();renderStats();
 }
+function setStatus(id,status){
+  const o=orgs.find(x=>x.id===id);if(!o)return;
+  o.status=safeStatus(status);
+  o.updatedAt=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  saveOrgs();renderList();renderStats();
+}
 function removeOrg(id){
   const o=orgs.find(x=>x.id===id);if(!o)return;
   if(!confirm(`Remove "${textVal(o.name)||'this card'}" from the tracker?`))return;
@@ -1160,6 +1172,11 @@ function renderList(){
           <div class="tc-match-text">${matchSummary||'Saved from Skill Match for easier drafting context.'}</div>
         </div>
       </div>`:''}
+      <div class="tc-status-actions">
+        <button class="tracker-quick ${status==='contacted'?'active-sent':''}" onclick="setStatus('${o.id}','contacted')">Email sent</button>
+        <button class="tracker-quick ${status==='replied'?'active-replied':''}" onclick="setStatus('${o.id}','replied')">Replied</button>
+        <button class="tracker-quick ${status==='meeting'?'active-meeting':''}" onclick="setStatus('${o.id}','meeting')">Meeting set</button>
+      </div>
       <div class="tc-notes"><textarea class="ni" placeholder="Notes..." oninput="updateNote('${o.id}',this.value)">${notes}</textarea></div>
       <div class="tc-actions">
         <button class="ai-btn ai-btn-email" onclick="openAI('${o.id}','email')">✉ Draft Email</button>
@@ -1216,8 +1233,28 @@ function addRec(r,tid){
 // ─────────────────────────────────────────────────
 function setMI(v){document.getElementById('match-in').value=v;}
 function normalizeMatchScore(value){
-  const n=Number(value);
-  return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):0;
+  if(typeof value==='number'&&Number.isFinite(value)){
+    return Math.max(0,Math.min(100,Math.round(value)));
+  }
+  const text=textVal(value).trim();
+  if(!text)return 0;
+  const ratio=text.match(/(\d{1,3})(?:\.\d+)?\s*\/\s*100\b/i);
+  if(ratio){
+    return Math.max(0,Math.min(100,Math.round(Number(ratio[1]))));
+  }
+  const outOf=text.match(/(\d{1,3})(?:\.\d+)?\s*out of\s*100\b/i);
+  if(outOf){
+    return Math.max(0,Math.min(100,Math.round(Number(outOf[1]))));
+  }
+  const percent=text.match(/(\d{1,3})(?:\.\d+)?\s*%/);
+  if(percent){
+    return Math.max(0,Math.min(100,Math.round(Number(percent[1]))));
+  }
+  const plain=text.match(/\b(\d{1,3})(?:\.\d+)?\b/);
+  if(plain){
+    return Math.max(0,Math.min(100,Math.round(Number(plain[1]))));
+  }
+  return 0;
 }
 function toList(value){
   if(Array.isArray(value))return value.map(textVal).map(x=>x.trim()).filter(Boolean);
@@ -1277,11 +1314,13 @@ function normalizeMatchResult(result){
 function normalizeMatchHistoryEntries(entries){
   return (Array.isArray(entries)?entries:[]).map(entry=>{
     const normalizedResult=normalizeMatchResult(entry?.result||entry);
+    const resultScore=normalizeMatchScore(normalizedResult?.match_score);
+    const savedScore=normalizeMatchScore(entry?.score);
     return {
       ...entry,
       company_name:textVal(entry?.company_name||normalizedResult?.company_name),
       input:textVal(entry?.input),
-      score:normalizeMatchScore(entry?.score ?? normalizedResult?.match_score),
+      score:resultScore||savedScore,
       level:textVal(entry?.level || normalizedResult?.match_level),
       result:normalizedResult
     };
@@ -1323,7 +1362,7 @@ async function runMatch(){
       maxTokens:2000,
       shape:'object',
       researchPrompt:`Analyze this organization for job fit with Malcolm Wu.\n${isURL?'Website: '+input:'Organization: '+input}\n\nMalcolm:\n${MALCOLM}\n\nResearch the organization and gather factual notes about what it does, where it is, likely roles, contact/website details, and why it may or may not fit Malcolm.`,
-      structurePrompt:'Return one JSON object with keys: company_name, company_overview, company_type, location, website, contact, match_score, match_level, matched_skills, skill_gaps, transferable_skills, recommended_roles, key_talking_points, approach_strategy, lane, priority, notes'
+      structurePrompt:'Return one JSON object with keys: company_name, company_overview, company_type, location, website, contact, match_score, match_level, matched_skills, skill_gaps, transferable_skills, recommended_roles, key_talking_points, approach_strategy, lane, priority, notes. IMPORTANT: match_score must be a number from 0 to 100 only, not a string like "95/100" or "95%".'
     });
     if(!result){showErr('match-result','Could not parse result. Please try again.');btn.disabled=false;btn.textContent='Analyze';return;}
     const normalizedResult=normalizeMatchResult(result);
