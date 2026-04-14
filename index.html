@@ -62,6 +62,8 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .s-r{background:#e6f4ea}.s-r .n{color:#137333}.s-m{background:#f3e8fd}.s-m .n{color:#9334e6}
 .s-pr{background:#e6f4ea}.s-pr .n{color:#137333}
 .controls{padding:0 24px 16px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tracker-note{margin:0 24px 16px;padding:12px 14px;border-radius:16px;background:#f8fafc;border:1px solid #dbe7fb;color:#35506b;font-size:12px;line-height:1.7}
+.tracker-note strong{color:#174ea6}
 .fbtn{padding:7px 13px;border:1px solid var(--line);border-radius:999px;background:#fff;cursor:pointer;font-size:12px;color:#3c4043}
 .fbtn.active{background:var(--ink);color:#fff;border-color:var(--ink)}
 .add-btn{margin-left:auto;padding:9px 16px;background:var(--brand);color:#fff;border:none;border-radius:999px;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 1px 2px rgba(26,115,232,.3)}
@@ -93,6 +95,8 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
 .upd{font-size:10px;color:#9ca3af}
 .tc-contact{padding:0 20px 10px 60px;font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap}
 .tc-contact a{color:var(--brand)}
+.tc-requirement{margin:0 20px 10px 60px;padding:10px 12px;border-radius:14px;background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;font-size:12px;line-height:1.6}
+.tc-requirement strong{color:#9a3412}
 .tc-match{padding:0 20px 10px 60px}
 .tc-match-box{padding:12px 14px;border-radius:16px;background:linear-gradient(180deg,#f8fbff 0,#eef5ff 100%);border:1px solid #d8e4fb}
 .tc-match-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
@@ -348,6 +352,7 @@ body{font-family:'Google Sans','Segoe UI',Roboto,Arial,sans-serif;background:lin
     <button class="fbtn" onclick="setFilter('not_pursuing',event)">Not pursuing</button>
     <button class="add-btn" onclick="openAdd()">+ Add org</button>
   </div>
+  <div class="tracker-note"><strong>Tracker requirement:</strong> every organization added here should include both a website and contact details so outreach drafting, follow-up, and applications are easier to complete.</div>
   <div class="t-list" id="list"></div>
 </div>
 
@@ -1096,6 +1101,9 @@ function renderList(){
     const website=textVal(o.website);
     const href=safeHref(website);
     const notes=textVal(o.notes);
+    const missingBits=[];
+    if(!contact)missingBits.push('contact details');
+    if(!website)missingBits.push('website');
     const matchScore=Number(o.matchScore);
     const matchLevel=textVal(o.matchLevel);
     const matchSummary=textVal(o.matchSummary);
@@ -1116,6 +1124,7 @@ function renderList(){
         <div class="card-tools"><button class="icon-btn" onclick="removeOrg('${o.id}')">Remove</button></div>
       </div>
       ${(contact||website)?`<div class="tc-contact">${contact?`<span>${contact}</span>`:''}${website?`<span><a href="${href}" target="_blank">${website}</a></span>`:''}</div>`:''}
+      ${missingBits.length?`<div class="tc-requirement"><strong>Needs update:</strong> add ${missingBits.join(' and ')} to make this tracker card complete for outreach and applications.</div>`:''}
       ${matchScore?`<div class="tc-match">
         <div class="tc-match-box">
           <div class="tc-match-head">
@@ -1205,6 +1214,20 @@ function normalizeMatchResult(result){
   normalized.key_talking_points=toList(normalized.key_talking_points);
   normalized.generated_job_titles=toList(normalized.generated_job_titles);
   return normalized;
+}
+function extractJobTitles(raw){
+  const parsed=parseJSON(raw,'{');
+  const fromJson=toList(parsed?.titles);
+  if(fromJson.length)return fromJson.slice(0,8);
+  const fromText=String(raw||'')
+    .replace(/```json|```/gi,'')
+    .split('\n')
+    .map(line=>line.replace(/^\s*(?:[-*•]|\d+[.)])\s*/,'').trim())
+    .filter(Boolean)
+    .filter(line=>!/^titles?\s*:/i.test(line))
+    .filter((x,i,a)=>a.indexOf(x)===i)
+    .slice(0,8);
+  return fromText;
 }
 function matchBand(score){
   const s=normalizeMatchScore(score);
@@ -1387,12 +1410,10 @@ async function generateJobTitles(name=''){
   try{
     const raw=await callGemini({
       maxTokens:700,
-      expectJson:true,
-      system:'Return valid JSON only.',
-      userMsg:`Generate 6 concise, realistic job titles Malcolm Wu could target for this organization. Prefer titles he can plausibly apply for now or through adjacent-fit positioning. Avoid generic filler and avoid repeating the exact same title.\n\nMalcolm profile:\n${MALCOLM}\n\nOrganization:\nName: ${r.company_name}\nType: ${r.company_type||''}\nLocation: ${r.location||''}\nOverview: ${r.company_overview||''}\nMatched skills: ${toList(r.matched_skills).join(', ')}\nTransferable skills: ${toList(r.transferable_skills).join(', ')}\nSkill gaps: ${toList(r.skill_gaps).join(', ')}\nCurrent recommended roles: ${toList(r.recommended_roles).join(', ')}\nApproach strategy: ${r.approach_strategy||''}\n\nReturn one JSON object: {"titles":["title 1","title 2","title 3"]}`
+      system:'Return concise application-ready title suggestions. JSON is preferred but plain bullet points are acceptable.',
+      userMsg:`Generate 6 concise, realistic job titles Malcolm Wu could target for this organization. Prefer titles he can plausibly apply for now or through adjacent-fit positioning. Avoid generic filler and avoid repeating the exact same title.\n\nMalcolm profile:\n${MALCOLM}\n\nOrganization:\nName: ${r.company_name}\nType: ${r.company_type||''}\nLocation: ${r.location||''}\nOverview: ${r.company_overview||''}\nMatched skills: ${toList(r.matched_skills).join(', ')}\nTransferable skills: ${toList(r.transferable_skills).join(', ')}\nSkill gaps: ${toList(r.skill_gaps).join(', ')}\nCurrent recommended roles: ${toList(r.recommended_roles).join(', ')}\nApproach strategy: ${r.approach_strategy||''}\n\nPreferred format:\n{"titles":["title 1","title 2","title 3"]}\nIf you do not return JSON, return only a short bullet list of job titles.`
     });
-    const parsed=parseJSON(raw,'{');
-    const titles=(parsed?.titles||[]).map(textVal).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,8);
+    const titles=extractJobTitles(raw);
     if(!titles.length)throw new Error('Could not generate job titles right now. Please try again.');
     matchJobTitles[r.company_name]=titles;
     const h=matchHistory.find(x=>x.company_name===r.company_name);
