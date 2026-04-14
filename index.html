@@ -1184,6 +1184,28 @@ function normalizeMatchScore(value){
   const n=Number(value);
   return Number.isFinite(n)?Math.max(0,Math.min(100,Math.round(n))):0;
 }
+function toList(value){
+  if(Array.isArray(value))return value.map(textVal).map(x=>x.trim()).filter(Boolean);
+  if(value==null)return [];
+  const text=textVal(value).trim();
+  if(!text)return [];
+  return text
+    .split(/\n|•|;|,/)
+    .map(x=>x.replace(/^[-*]\s*/,'').trim())
+    .filter(Boolean);
+}
+function normalizeMatchResult(result){
+  if(!result||typeof result!=='object')return result;
+  const normalized={...result};
+  normalized.match_score=normalizeMatchScore(normalized.match_score);
+  normalized.matched_skills=toList(normalized.matched_skills);
+  normalized.skill_gaps=toList(normalized.skill_gaps);
+  normalized.transferable_skills=toList(normalized.transferable_skills);
+  normalized.recommended_roles=toList(normalized.recommended_roles);
+  normalized.key_talking_points=toList(normalized.key_talking_points);
+  normalized.generated_job_titles=toList(normalized.generated_job_titles);
+  return normalized;
+}
 function matchBand(score){
   const s=normalizeMatchScore(score);
   if(s>=85)return {tone:'excellent',label:'Excellent',ring:'sc-hi-ring',color:'#10b981',chip:'match-chip-excellent'};
@@ -1209,11 +1231,11 @@ async function runMatch(){
       structurePrompt:'Return one JSON object with keys: company_name, company_overview, company_type, location, website, contact, match_score, match_level, matched_skills, skill_gaps, transferable_skills, recommended_roles, key_talking_points, approach_strategy, lane, priority, notes'
     });
     if(!result){showErr('match-result','Could not parse result. Please try again.');btn.disabled=false;btn.textContent='Analyze';return;}
-    result.match_score=normalizeMatchScore(result.match_score);
-    if(matchJobTitles[result.company_name]?.length)result.generated_job_titles=[...matchJobTitles[result.company_name]];
-    curMatch=result;
-    matchCollapsed[result.company_name]=false;
-    matchHistory=[{company_name:result.company_name,input,score:result.match_score,level:result.match_level,result},...matchHistory.filter(h=>h.company_name!==result.company_name)].slice(0,12);
+    const normalizedResult=normalizeMatchResult(result);
+    if(matchJobTitles[normalizedResult.company_name]?.length)normalizedResult.generated_job_titles=[...matchJobTitles[normalizedResult.company_name]];
+    curMatch=normalizedResult;
+    matchCollapsed[normalizedResult.company_name]=false;
+    matchHistory=[{company_name:normalizedResult.company_name,input,score:normalizedResult.match_score,level:normalizedResult.match_level,result:normalizedResult},...matchHistory.filter(h=>h.company_name!==normalizedResult.company_name)].slice(0,12);
     await saveMatchState();
     document.getElementById('match-result').innerHTML='';
     renderMatchHist();
@@ -1224,6 +1246,7 @@ function loadCachedMatch(i){
   const h=matchHistory[i];if(!h)return;
   document.getElementById('match-in').value=h.input;
   if(h.result){
+    h.result=normalizeMatchResult(h.result);
     curMatch=h.result;
     matchCollapsed[h.company_name]=false;
     try{storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
@@ -1279,6 +1302,7 @@ function slugify(text){
 function openMatchByName(name){
   const h=matchHistory.find(x=>x.company_name===name);
   if(!h||!h.result)return;
+  h.result=normalizeMatchResult(h.result);
   curMatch=h.result;
   matchCollapsed[name]=false;
   try{storage.set('match-collapsed',JSON.stringify(matchCollapsed));}catch{}
@@ -1304,16 +1328,19 @@ function removeMatch(name){
 }
 function getMatchByName(name){
   const h=matchHistory.find(x=>x.company_name===name);
-  return h&&h.result?h.result:null;
+  if(!(h&&h.result))return null;
+  h.result=normalizeMatchResult(h.result);
+  return h.result;
 }
 function renderMatchCard(r,input='',collapsed=false){
+  r=normalizeMatchResult(r);
   const s=normalizeMatchScore(r.match_score);
   const band=matchBand(s);
   const already=orgs.some(o=>o.name===r.company_name);
   const slug=slugify(r.company_name);
   const companyName=String(r.company_name).replace(/'/g,"\\'");
   const summary=(r.approach_strategy||r.company_overview||'').slice(0,210);
-  const generatedTitles=(r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[]).slice(0,8);
+  const generatedTitles=((r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[])).slice(0,8);
   const roles=((r.recommended_roles||[]).length?r.recommended_roles:generatedTitles).slice(0,8);
   return `
     <div class="match-result" id="match-card-${slug}">
@@ -1340,12 +1367,12 @@ function renderMatchCard(r,input='',collapsed=false){
       ${collapsed?'':`<div class="match-body">
         <div class="ms"><div class="ms-title">About</div><div class="ms-box">${r.company_overview||''}</div></div>
         <div class="ms"><div class="ms-title">📌 Match summary</div><div class="ms-box green">${s}/100 · ${r.match_level||band.label} · ${band.label}. ${r.approach_strategy||'Strong enough to start tailored outreach based on the fit signals below.'}</div></div>
-        <div class="ms"><div class="ms-title">✅ Skills that match</div><div class="skill-tags">${(r.matched_skills||[]).map(x=>`<span class="sk sk-y">${x}</span>`).join('')}</div></div>
-        ${(r.transferable_skills||[]).length?`<div class="ms"><div class="ms-title">🔄 Transferable</div><div class="skill-tags">${r.transferable_skills.map(x=>`<span class="sk sk-t">${x}</span>`).join('')}</div></div>`:''}
-        ${(r.skill_gaps||[]).length?`<div class="ms"><div class="ms-title">⚠️ Gaps</div><div class="skill-tags">${r.skill_gaps.map(x=>`<span class="sk sk-n">${x}</span>`).join('')}</div></div>`:''}
+        <div class="ms"><div class="ms-title">✅ Skills that match</div><div class="skill-tags">${toList(r.matched_skills).map(x=>`<span class="sk sk-y">${x}</span>`).join('')}</div></div>
+        ${toList(r.transferable_skills).length?`<div class="ms"><div class="ms-title">🔄 Transferable</div><div class="skill-tags">${toList(r.transferable_skills).map(x=>`<span class="sk sk-t">${x}</span>`).join('')}</div></div>`:''}
+        ${toList(r.skill_gaps).length?`<div class="ms"><div class="ms-title">⚠️ Gaps</div><div class="skill-tags">${toList(r.skill_gaps).map(x=>`<span class="sk sk-n">${x}</span>`).join('')}</div></div>`:''}
         <div class="ms"><div class="ms-title">🎯 Recommended roles</div><div class="role-list">${roles.map(x=>`<span class="role-tag">${x}</span>`).join('')}</div></div>
         <div class="ms"><div class="ms-title">🧭 Potential job titles to target</div>${generatedTitles.length?`<div class="job-title-list">${generatedTitles.map(x=>`<span class="job-title-tag">${x}</span>`).join('')}</div>`:`<div class="ms-box">Use <strong>Generate job titles</strong> to create application-ready titles tailored to this organization.</div>`}</div>
-        <div class="ms"><div class="ms-title">💬 Key talking points</div><ul class="tp-list">${(r.key_talking_points||[]).map(x=>`<li>${x}</li>`).join('')}</ul></div>
+        <div class="ms"><div class="ms-title">💬 Key talking points</div><ul class="tp-list">${toList(r.key_talking_points).map(x=>`<li>${x}</li>`).join('')}</ul></div>
         <div class="ms"><div class="ms-title">🗺 Approach strategy</div><div class="ms-box yellow">${r.approach_strategy||''}</div></div>
         ${r.notes?`<div class="ms"><div class="ms-title">🔎 Intel</div><div class="ms-box">${r.notes}</div></div>`:''}
       </div>`}
@@ -1362,7 +1389,7 @@ async function generateJobTitles(name=''){
       maxTokens:700,
       expectJson:true,
       system:'Return valid JSON only.',
-      userMsg:`Generate 6 concise, realistic job titles Malcolm Wu could target for this organization. Prefer titles he can plausibly apply for now or through adjacent-fit positioning. Avoid generic filler and avoid repeating the exact same title.\n\nMalcolm profile:\n${MALCOLM}\n\nOrganization:\nName: ${r.company_name}\nType: ${r.company_type||''}\nLocation: ${r.location||''}\nOverview: ${r.company_overview||''}\nMatched skills: ${(r.matched_skills||[]).join(', ')}\nTransferable skills: ${(r.transferable_skills||[]).join(', ')}\nSkill gaps: ${(r.skill_gaps||[]).join(', ')}\nCurrent recommended roles: ${(r.recommended_roles||[]).join(', ')}\nApproach strategy: ${r.approach_strategy||''}\n\nReturn one JSON object: {"titles":["title 1","title 2","title 3"]}`
+      userMsg:`Generate 6 concise, realistic job titles Malcolm Wu could target for this organization. Prefer titles he can plausibly apply for now or through adjacent-fit positioning. Avoid generic filler and avoid repeating the exact same title.\n\nMalcolm profile:\n${MALCOLM}\n\nOrganization:\nName: ${r.company_name}\nType: ${r.company_type||''}\nLocation: ${r.location||''}\nOverview: ${r.company_overview||''}\nMatched skills: ${toList(r.matched_skills).join(', ')}\nTransferable skills: ${toList(r.transferable_skills).join(', ')}\nSkill gaps: ${toList(r.skill_gaps).join(', ')}\nCurrent recommended roles: ${toList(r.recommended_roles).join(', ')}\nApproach strategy: ${r.approach_strategy||''}\n\nReturn one JSON object: {"titles":["title 1","title 2","title 3"]}`
     });
     const parsed=parseJSON(raw,'{');
     const titles=(parsed?.titles||[]).map(textVal).map(x=>x.trim()).filter(Boolean).filter((x,i,a)=>a.indexOf(x)===i).slice(0,8);
@@ -1388,7 +1415,7 @@ function addMatchToTracker(name=''){
   const r=name?getMatchByName(name):curMatch;
   if(!r)return;
   curMatch=r;
-  const generatedTitles=(r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[]).slice(0,8);
+    const generatedTitles=(toList(r.generated_job_titles).length?toList(r.generated_job_titles):matchJobTitles[r.company_name]||[]).slice(0,8);
   orgs.push({
     id:'m'+Date.now(),
     name:r.company_name,
@@ -1401,7 +1428,7 @@ function addMatchToTracker(name=''){
     matchScore:r.match_score||'',
     matchLevel:r.match_level||'',
     matchSummary:r.approach_strategy||'',
-    notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(r.recommended_roles?'\n\nTarget roles: '+r.recommended_roles.join(', '):'')+(generatedTitles.length?'\n\nGenerated titles: '+generatedTitles.join(', '):''),
+    notes:(r.notes||'')+(r.approach_strategy?'\n\nApproach: '+r.approach_strategy:'')+(toList(r.recommended_roles).length?'\n\nTarget roles: '+toList(r.recommended_roles).join(', '):'')+(generatedTitles.length?'\n\nGenerated titles: '+generatedTitles.join(', '):''),
     status:'not_started',
     updatedAt:null
   });
@@ -1414,8 +1441,8 @@ function openAIFromMatch(name=''){
   const r=name?getMatchByName(name):curMatch;
   if(!r)return;
   curMatch=r;
-  const generatedTitles=(r.generated_job_titles&&r.generated_job_titles.length?r.generated_job_titles:matchJobTitles[r.company_name]||[]).slice(0,8);
-  const t={id:'_mtmp',name:r.company_name,location:r.location,type:r.company_type,lane:r.lane||'local',contact:r.contact,notes:`Match: ${normalizeMatchScore(r.match_score)}/100 — ${r.match_level||matchBand(r.match_score).label}\nApproach: ${r.approach_strategy}\nTalking points: ${(r.key_talking_points||[]).join('; ')}\nTarget roles: ${(r.recommended_roles||[]).join(', ')}${generatedTitles.length?`\nGenerated titles: ${generatedTitles.join(', ')}`:''}`};
+  const generatedTitles=(toList(r.generated_job_titles).length?toList(r.generated_job_titles):matchJobTitles[r.company_name]||[]).slice(0,8);
+  const t={id:'_mtmp',name:r.company_name,location:r.location,type:r.company_type,lane:r.lane||'local',contact:r.contact,notes:`Match: ${normalizeMatchScore(r.match_score)}/100 — ${r.match_level||matchBand(r.match_score).label}\nApproach: ${r.approach_strategy}\nTalking points: ${toList(r.key_talking_points).join('; ')}\nTarget roles: ${toList(r.recommended_roles).join(', ')}${generatedTitles.length?`\nGenerated titles: ${generatedTitles.join(', ')}`:''}`};
   const ex=orgs.find(o=>o.id==='_mtmp');if(ex)Object.assign(ex,t);else orgs.push(t);
   openAI('_mtmp','email');
 }
